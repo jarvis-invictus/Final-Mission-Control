@@ -9,7 +9,7 @@ import {
   BarChart3, Reply, Forward, Eye, Bold, Italic, Underline,
   Link, List, ListOrdered, Heading1, Variable, ChevronLeft,
   ChevronsLeft, ChevronsRight, Check, Square, CheckSquare,
-  Paperclip, Clock3, Type, Hash, Activity,
+  Paperclip, Clock3, Type, Hash, Activity, Globe,
 } from "lucide-react";
 import { clsx } from "clsx";
 import { getEmailHistory, sendEmail, getEmailTemplates, getProspects } from "@/lib/api";
@@ -47,7 +47,7 @@ interface ProspectOption {
   business_name?: string;
 }
 
-type Tab = "history" | "compose" | "warmup" | "analytics";
+type Tab = "history" | "compose" | "warmup" | "analytics" | "sequences" | "domains";
 type StatusFilter = "all" | "sent" | "delivered" | "opened" | "bounced" | "failed";
 type DateRange = "all" | "today" | "7days" | "30days";
 
@@ -1414,6 +1414,8 @@ export default function EmailCenter() {
     { id: "compose", label: "Compose", icon: PenSquare },
     { id: "warmup", label: "Warmup", icon: Flame },
     { id: "analytics", label: "Analytics", icon: BarChart3 },
+    { id: "sequences", label: "Sequences", icon: Mail },
+    { id: "domains", label: "Domains", icon: Globe },
   ];
 
   return (
@@ -1485,6 +1487,168 @@ export default function EmailCenter() {
       )}
       {activeTab === "warmup" && <WarmupTab />}
       {activeTab === "analytics" && <AnalyticsTab emails={emails} />}
+      {activeTab === "sequences" && <SequencesTab />}
+      {activeTab === "domains" && <DomainsTab />}
+    </div>
+  );
+}
+
+/* ================================================================ */
+/*  SEQUENCES TAB — Niche-optimized email sequences                  */
+/* ================================================================ */
+function SequencesTab() {
+  const [niches, setNiches] = useState<string[]>([]);
+  const [sequences, setSequences] = useState<Record<string, any[]>>({});
+  const [selectedNiche, setSelectedNiche] = useState<string>("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/email?section=sequences")
+      .then(r => r.json())
+      .then(d => {
+        setNiches(d.niches || []);
+        setSequences(d.sequences || {});
+        if (d.niches?.length > 0) setSelectedNiche(d.niches[0]);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-brand-400" /></div>;
+
+  const currentSeq = sequences[selectedNiche] || [];
+  const typeColors: Record<string, string> = {
+    discovery: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+    followup: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+    value: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+    breakup: "bg-red-500/10 text-red-400 border-red-500/20",
+  };
+
+  return (
+    <div className="space-y-6 animate-fadeInUp">
+      {/* Niche selector */}
+      <div className="flex items-center gap-3">
+        <h2 className="text-lg font-semibold text-white">Email Sequences</h2>
+        <div className="flex gap-1 p-1 bg-surface-2 rounded-xl border border-white/5">
+          {niches.map(n => (
+            <button key={n} onClick={() => setSelectedNiche(n)}
+              className={clsx("px-3 py-1.5 text-xs font-medium rounded-lg transition-all capitalize",
+                n === selectedNiche ? "bg-brand-400/20 text-brand-400" : "text-zinc-500 hover:text-white"
+              )}>{n}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* Sequence timeline */}
+      <div className="space-y-4">
+        {currentSeq.map((step, i) => (
+          <div key={i} className="relative pl-8">
+            {/* Timeline dot */}
+            <div className="absolute left-0 top-3 w-4 h-4 rounded-full bg-brand-400/20 border-2 border-brand-400 flex items-center justify-center">
+              <span className="text-[8px] font-bold text-brand-400">{i + 1}</span>
+            </div>
+            {i < currentSeq.length - 1 && (
+              <div className="absolute left-[7px] top-7 w-0.5 h-full bg-brand-400/10" />
+            )}
+            {/* Step card */}
+            <div className="glass rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className={clsx("px-2 py-0.5 text-[10px] font-semibold uppercase rounded-full border", typeColors[step.type] || "bg-zinc-500/10 text-zinc-400 border-zinc-500/20")}>
+                  {step.type}
+                </span>
+                <span className="text-[11px] text-zinc-500">Day {step.day}</span>
+              </div>
+              <p className="text-sm font-medium text-zinc-200 mb-2">{step.subject}</p>
+              <pre className="text-xs text-zinc-400 whitespace-pre-wrap font-sans leading-relaxed bg-surface-2 rounded-lg p-3 max-h-32 overflow-y-auto">
+                {step.body}
+              </pre>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ================================================================ */
+/*  DOMAINS TAB — Email domain status and configuration              */
+/* ================================================================ */
+function DomainsTab() {
+  const [domains, setDomains] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/email?section=domains")
+      .then(r => r.json())
+      .then(d => setDomains(d.domains || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-brand-400" /></div>;
+
+  return (
+    <div className="space-y-6 animate-fadeInUp">
+      <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+        <Globe className="w-5 h-5 text-brand-400" /> Email Domains & DNS
+      </h2>
+
+      <div className="space-y-3">
+        {domains.map((d, i) => (
+          <div key={i} className="glass rounded-xl p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-semibold text-white">{d.domain}</span>
+                <span className={clsx("px-2 py-0.5 text-[10px] font-medium rounded-full",
+                  d.status === "active" ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                )}>
+                  {d.status}
+                </span>
+                <span className="text-[11px] text-zinc-500">{d.type} · {d.provider}</span>
+              </div>
+            </div>
+            <div className="grid grid-cols-4 gap-3">
+              {["mx", "spf", "dkim", "dmarc"].map(rec => (
+                <div key={rec} className="flex items-center gap-2 text-xs">
+                  {d[rec] ? (
+                    <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
+                  ) : (
+                    <XCircle className="w-3.5 h-3.5 text-red-400" />
+                  )}
+                  <span className={d[rec] ? "text-emerald-400" : "text-red-400"}>{rec.toUpperCase()}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Domain health summary */}
+      <div className="glass rounded-xl p-5">
+        <h3 className="text-sm font-semibold text-zinc-300 mb-3">📧 Email Health Summary</h3>
+        <div className="grid grid-cols-2 gap-4 text-xs">
+          <div>
+            <p className="text-zinc-500 mb-1">Deliverability Score</p>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 h-2 bg-surface-3 rounded-full overflow-hidden">
+                <div className="h-full bg-emerald-400 rounded-full" style={{ width: "85%" }} />
+              </div>
+              <span className="text-emerald-400 font-semibold">85%</span>
+            </div>
+          </div>
+          <div>
+            <p className="text-zinc-500 mb-1">Warmup Progress</p>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 h-2 bg-surface-3 rounded-full overflow-hidden">
+                <div className="h-full bg-brand-400 rounded-full" style={{ width: `${Math.min(100, (Math.floor((Date.now() - new Date("2026-04-07").getTime()) / 86400000) / 21) * 100)}%` }} />
+              </div>
+              <span className="text-brand-400 font-semibold">
+                Day {Math.min(21, Math.floor((Date.now() - new Date("2026-04-07").getTime()) / 86400000))}/21
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
