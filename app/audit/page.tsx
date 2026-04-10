@@ -254,7 +254,7 @@ export default function AuditPage() {
             <div className="text-right">
               <div className="text-xs text-zinc-500">Auto-refresh 30s</div>
               <div className="text-sm text-zinc-400">Last: {lastUpdate}</div>
-              <button onClick={fetchData} className="mt-1 px-3 py-1 bg-brand-500 hover:bg-brand-400 rounded text-xs">Refresh</button>
+              <button onClick={fetchData} className="mt-2 px-5 py-2.5 bg-brand-500 hover:bg-brand-400 rounded-xl text-sm font-bold text-black shadow-[0_0_20px_rgba(0,255,136,0.2)] hover:shadow-[0_0_30px_rgba(0,255,136,0.3)] transition-all active:scale-95">🔄 Refresh VPS Data</button>
             </div>
           </div>
         </div>
@@ -365,7 +365,7 @@ export default function AuditPage() {
               <button
                 onClick={() => runCleanup('node-modules', 'Clean old build files')}
                 disabled={cleaningUp}
-                className="text-left p-3 bg-surface-3 rounded-lg border border-surface-5 hover:border-brand-400/30 transition-colors disabled:opacity-50"
+                className="flex flex-col items-start gap-1 p-4 bg-gradient-to-r from-emerald-500/10 to-emerald-500/5 rounded-xl border-2 border-emerald-500/20 hover:border-emerald-400/50 hover:shadow-[0_0_15px_rgba(16,185,129,0.1)] transition-all duration-200 disabled:opacity-50 cursor-pointer active:scale-[0.98]"
               >
                 <div className="text-sm font-medium text-zinc-200">📦 Clean Old Build Files</div>
                 <div className="text-xs text-zinc-500 mt-1">Removes node_modules & .next from stale Linus projects (dental-nextjs-demo, ReportFlow, mc-dashboard). These are install artifacts that can be recreated.</div>
@@ -374,7 +374,7 @@ export default function AuditPage() {
               <button
                 onClick={() => runCleanup('docker-containers', 'Remove stopped containers')}
                 disabled={cleaningUp}
-                className="text-left p-3 bg-surface-3 rounded-lg border border-surface-5 hover:border-brand-400/30 transition-colors disabled:opacity-50"
+                className="flex flex-col items-start gap-1 p-4 bg-gradient-to-r from-emerald-500/10 to-emerald-500/5 rounded-xl border-2 border-emerald-500/20 hover:border-emerald-400/50 hover:shadow-[0_0_15px_rgba(16,185,129,0.1)] transition-all duration-200 disabled:opacity-50 cursor-pointer active:scale-[0.98]"
               >
                 <div className="text-sm font-medium text-zinc-200">🗑️ Remove Stopped Containers</div>
                 <div className="text-xs text-zinc-500 mt-1">Removes containers that have exited/crashed. Running containers (Jarvis, Linus, etc.) are NOT touched.</div>
@@ -383,7 +383,7 @@ export default function AuditPage() {
               <button
                 onClick={() => runCleanup('docker-build-cache', 'Clear build cache')}
                 disabled={cleaningUp}
-                className="text-left p-3 bg-surface-3 rounded-lg border border-surface-5 hover:border-brand-400/30 transition-colors disabled:opacity-50"
+                className="flex flex-col items-start gap-1 p-4 bg-gradient-to-r from-emerald-500/10 to-emerald-500/5 rounded-xl border-2 border-emerald-500/20 hover:border-emerald-400/50 hover:shadow-[0_0_15px_rgba(16,185,129,0.1)] transition-all duration-200 disabled:opacity-50 cursor-pointer active:scale-[0.98]"
               >
                 <div className="text-sm font-medium text-zinc-200">🔨 Clear Docker Build Cache</div>
                 <div className="text-xs text-zinc-500 mt-1">Removes cached layers from previous builds. Next &quot;docker build&quot; will be slower, but no running services affected.</div>
@@ -392,7 +392,7 @@ export default function AuditPage() {
               <button
                 onClick={() => runCleanup('journal', 'Clean system logs')}
                 disabled={cleaningUp}
-                className="text-left p-3 bg-surface-3 rounded-lg border border-surface-5 hover:border-brand-400/30 transition-colors disabled:opacity-50"
+                className="flex flex-col items-start gap-1 p-4 bg-gradient-to-r from-emerald-500/10 to-emerald-500/5 rounded-xl border-2 border-emerald-500/20 hover:border-emerald-400/50 hover:shadow-[0_0_15px_rgba(16,185,129,0.1)] transition-all duration-200 disabled:opacity-50 cursor-pointer active:scale-[0.98]"
               >
                 <div className="text-sm font-medium text-zinc-200">📋 Clean Old System Logs</div>
                 <div className="text-xs text-zinc-500 mt-1">Removes system journal logs older than 3 days. Recent logs kept for debugging. Standard Linux maintenance.</div>
@@ -401,7 +401,7 @@ export default function AuditPage() {
               <button
                 onClick={() => runCleanup('docker-images', 'Remove unused images')}
                 disabled={cleaningUp}
-                className="text-left p-3 bg-surface-3 rounded-lg border border-surface-5 hover:border-amber-400/30 transition-colors disabled:opacity-50"
+                className="flex flex-col items-start gap-1 p-4 bg-gradient-to-r from-amber-500/10 to-amber-500/5 rounded-xl border-2 border-amber-500/20 hover:border-amber-400/50 hover:shadow-[0_0_15px_rgba(245,158,11,0.1)] transition-all duration-200 disabled:opacity-50 cursor-pointer active:scale-[0.98]"
               >
                 <div className="text-sm font-medium text-zinc-200">🐳 Remove Unused Docker Images</div>
                 <div className="text-xs text-zinc-500 mt-1">Removes images not used by any running container. If a stopped container needs restarting, its image may need to be re-pulled.</div>

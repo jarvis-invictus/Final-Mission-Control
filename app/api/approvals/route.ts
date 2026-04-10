@@ -3,7 +3,7 @@ import { existsSync, readFileSync, writeFileSync } from "fs";
 
 export const dynamic = "force-dynamic";
 
-const APPROVALS_FILE = "/tmp/mc-approvals.json";
+const APPROVALS_FILE = "/workspace/agents/elon/mc-approvals.json";
 
 interface Approval {
   id: string;

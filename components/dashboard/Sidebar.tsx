@@ -40,7 +40,7 @@ const sections: NavSection[] = [
   {
     title: "Assets",
     items: [
-      { icon: Globe, label: "Demos", href: "/demos" },
+      { icon: Globe, label: "Niche Gallery", href: "/demos" },
       { icon: FileText, label: "Documents", href: "/docs" },
       { icon: BookOpen, label: "Playbooks", href: "/playbooks" },
     ],

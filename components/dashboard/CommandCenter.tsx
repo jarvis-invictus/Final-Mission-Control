@@ -130,6 +130,8 @@ export default function CommandCenter() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [ghlStats, setGhlStats] = useState<{ contacts: number; opportunities: number; pipelineValue: number; conversations: number } | null>(null);
+  const [weather, setWeather] = useState<{ temp_C: string; weatherDesc: string } | null>(null);
+  const [liveTime, setLiveTime] = useState(new Date());
 
   const fetchData = useCallback(async (isRefresh = false) => {
     try {
@@ -164,10 +166,16 @@ export default function CommandCenter() {
 
   useEffect(() => {
     fetchData();
-    // Auto-refresh every 60s
     const interval = setInterval(() => fetchData(true), 60000);
     return () => clearInterval(interval);
   }, [fetchData]);
+
+  /* Weather + live clock */
+  useEffect(() => {
+    fetch("/api/weather").then(r => r.json()).then(setWeather).catch(() => {});
+    const clockInterval = setInterval(() => setLiveTime(new Date()), 1000);
+    return () => clearInterval(clockInterval);
+  }, []);
 
   // Derive display values from live data
   const totalProspects = data?.summary?.total ?? 0;
@@ -185,6 +193,13 @@ export default function CommandCenter() {
 
   // Format number with commas
   const fmt = (n: number) => n.toLocaleString("en-IN");
+
+  // Greeting based on IST time
+  const istHour = liveTime.getUTCHours() + 5 + (liveTime.getUTCMinutes() + 30 >= 60 ? 1 : 0);
+  const normalizedHour = ((istHour % 24) + 24) % 24;
+  const greeting = normalizedHour < 12 ? "Good morning" : normalizedHour < 17 ? "Good afternoon" : "Good evening";
+  const istTimeStr = liveTime.toLocaleTimeString("en-US", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  const istDateStr = liveTime.toLocaleDateString("en-US", { timeZone: "Asia/Kolkata", weekday: "long", year: "numeric", month: "long", day: "numeric" });
 
   // Current date string
   const now = new Date();
@@ -241,33 +256,41 @@ export default function CommandCenter() {
         </div>
       )}
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Command Center</h1>
-          <p className="text-sm text-zinc-500 mt-1">
-            <Clock className="w-3 h-3 inline mr-1" />
-            {dateStr} — {topNiche ? `Top vertical: ${topNiche.niche.toUpperCase()} (${fmt(topNiche.count)})` : "All Verticals"}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {lastUpdated && (
-            <span className="text-[10px] text-zinc-600 font-mono">
-              Updated {lastUpdated.toLocaleTimeString()}
-            </span>
-          )}
-          <button
-            onClick={() => fetchData(true)}
-            disabled={refreshing}
-            className="p-1.5 rounded-lg hover:bg-white/5 transition-colors disabled:opacity-50"
-            title="Refresh data"
-          >
-            <RefreshCw className={`w-4 h-4 text-zinc-400 ${refreshing ? "animate-spin" : ""}`} />
-          </button>
-          <span className="px-3 py-1.5 bg-success/10 text-success text-xs font-medium rounded-full flex items-center gap-1.5">
-            <Activity className="w-3 h-3" />
-            Systems Operational
-          </span>
+      {/* Welcome Bar */}
+      <div className="glass rounded-2xl p-6 animate-fadeInUp">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-white">
+              {greeting}, <span className="neon-text">Master</span> 👋
+            </h1>
+            <div className="flex items-center gap-4 mt-2 text-sm text-zinc-400">
+              <span className="flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5" />
+                {istDateStr} · {istTimeStr} IST
+              </span>
+              {weather && weather.temp_C !== "?" && (
+                <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/5 border border-white/10">
+                  {weather.weatherDesc === "Sunny" || weather.weatherDesc === "Clear" ? "☀️" : weather.weatherDesc.includes("Rain") ? "🌧️" : weather.weatherDesc.includes("Cloud") ? "☁️" : "🌤️"}
+                  {weather.temp_C}°C Pune · {weather.weatherDesc}
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            {lastUpdated && (
+              <span className="text-[10px] text-zinc-600 font-mono">
+                Updated {lastUpdated.toLocaleTimeString("en-US", { timeZone: "Asia/Kolkata" })}
+              </span>
+            )}
+            <button
+              onClick={() => fetchData(true)}
+              disabled={refreshing}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-white/5 border border-white/10 hover:border-[var(--neon)]/30 hover:shadow-[0_0_15px_rgba(0,255,136,0.1)] text-zinc-300 hover:text-white transition-all"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
+              {refreshing ? "Refreshing..." : "Refresh"}
+            </button>
+          </div>
         </div>
       </div>
 

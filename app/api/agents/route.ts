@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { execSync } from "child_process";
 
 export const dynamic = "force-dynamic";
 
@@ -17,20 +18,41 @@ interface AgentCheck {
   error?: string;
 }
 
-const ACTIVE_AGENTS = [
-  { id: "jarvis", name: "Jarvis", role: "COO", title: "Gateway & Infrastructure", ip: "172.26.0.10" },
-  { id: "linus",  name: "Linus",  role: "CTO", title: "Build & Deploy",           ip: "172.26.0.3"  },
-  { id: "jordan", name: "Jordan", role: "CRO", title: "Revenue & Outreach",       ip: "172.26.0.14" },
-  { id: "gary",   name: "Gary",   role: "CMO", title: "Growth & Content",         ip: "172.26.0.12" },
-  { id: "friend", name: "Friend", role: "Support", title: "Support & Assistance", ip: "172.26.0.7"  },
+const AGENT_DEFS = [
+  { id: "jarvis", name: "Jarvis", role: "COO", title: "Gateway & Infrastructure", container: "openclaw-v1yl-openclaw-1" },
+  { id: "elon",   name: "Elon",   role: "Fleet Commander", title: "Fleet Operations", container: "openclaw-elon" },
+  { id: "linus",  name: "Linus",  role: "CTO", title: "Build & Deploy",           container: "openclaw-linus" },
+  { id: "jordan", name: "Jordan", role: "CRO", title: "Revenue & Outreach",       container: "openclaw-jordan" },
+  { id: "friend", name: "Friend", role: "Support", title: "Support & Assistance", container: "openclaw-friend" },
 ];
 
 const PORT = 18790;
 const TOKEN = "fleet_ops_2026";
-const TIMEOUT_MS = 3000;
+const TIMEOUT_MS = 5000;
 
-async function checkAgent(agent: (typeof ACTIVE_AGENTS)[number]): Promise<AgentCheck> {
-  const endpoint = `http://${agent.ip}:${PORT}/hooks/agent`;
+/* Dynamically resolve container IPs via docker inspect */
+function resolveIPs(): Map<string, string> {
+  const result = new Map<string, string>();
+  const containers = AGENT_DEFS.map(a => a.container).join(" ");
+  try {
+    const raw = execSync(
+      `docker inspect ${containers} --format '{{.Name}}|||{{range .NetworkSettings.Networks}}{{.IPAddress}} {{end}}' 2>/dev/null`,
+      { timeout: 5000 }
+    ).toString().trim();
+    for (const line of raw.split("\n")) {
+      const [rawName, ipsStr] = line.split("|||");
+      const name = rawName.replace(/^\//, "");
+      // Pick the 172.26.x.x IP (traefik_shared network)
+      const ips = (ipsStr || "").trim().split(/\s+/);
+      const ip = ips.find(i => i.startsWith("172.26.")) || ips[0] || "";
+      if (ip) result.set(name, ip);
+    }
+  } catch {}
+  return result;
+}
+
+async function checkAgent(agent: typeof AGENT_DEFS[number], ip: string): Promise<AgentCheck> {
+  const endpoint = `http://${ip}:${PORT}/hooks/agent`;
   const start = Date.now();
   try {
     const controller = new AbortController();
@@ -42,56 +64,37 @@ async function checkAgent(agent: (typeof ACTIVE_AGENTS)[number]): Promise<AgentC
     });
     clearTimeout(timeout);
     const elapsed = Date.now() - start;
-    // ANY HTTP response means the container is alive and listening.
-    // 405 is the expected response from relay endpoints (Method Not Allowed).
-    // Even 500 means the server process is running.
     return {
-      id: agent.id,
-      name: agent.name,
-      role: agent.role,
-      title: agent.title,
-      ip: agent.ip,
-      port: PORT,
-      endpoint,
-      status: "ALIVE",
-      responseMs: elapsed,
-      httpStatus: res.status,
-      lastChecked: new Date().toISOString(),
+      id: agent.id, name: agent.name, role: agent.role, title: agent.title,
+      ip, port: PORT, endpoint, status: "ALIVE", responseMs: elapsed,
+      httpStatus: res.status, lastChecked: new Date().toISOString(),
     };
   } catch (err) {
     const elapsed = Date.now() - start;
     let errorDetail = "Connection failed";
     if (err instanceof Error) {
-      if (err.name === "AbortError") {
-        errorDetail = `Timeout after ${TIMEOUT_MS}ms`;
-      } else if (err.message.includes("ECONNREFUSED")) {
-        errorDetail = "Connection refused — container may be down";
-      } else if (err.message.includes("ENOTFOUND")) {
-        errorDetail = "Host not found — DNS/network issue";
-      } else {
-        errorDetail = err.message;
-      }
+      if (err.name === "AbortError") errorDetail = `Timeout after ${TIMEOUT_MS}ms`;
+      else if (err.message.includes("ECONNREFUSED")) errorDetail = "Connection refused";
+      else if (err.message.includes("ENOTFOUND")) errorDetail = "Host not found";
+      else errorDetail = err.message;
     }
     return {
-      id: agent.id,
-      name: agent.name,
-      role: agent.role,
-      title: agent.title,
-      ip: agent.ip,
-      port: PORT,
-      endpoint,
-      status: "DOWN",
-      responseMs: elapsed,
-      httpStatus: null,
-      lastChecked: new Date().toISOString(),
-      error: errorDetail,
+      id: agent.id, name: agent.name, role: agent.role, title: agent.title,
+      ip, port: PORT, endpoint, status: "DOWN", responseMs: elapsed,
+      httpStatus: null, lastChecked: new Date().toISOString(), error: errorDetail,
     };
   }
 }
 
-export async function GET() {
-  const results = await Promise.all(ACTIVE_AGENTS.map(checkAgent));
-  const online = results.filter((r) => r.status === "ALIVE").length;
+export async function GET(): Promise<any> {
+  const ipMap = resolveIPs();
+  const results = await Promise.all(
+    AGENT_DEFS.map(agent => {
+      const ip = ipMap.get(agent.container) || "0.0.0.0";
+      return checkAgent(agent, ip);
+    })
+  );
+  const online = results.filter(r => r.status === "ALIVE").length;
   return NextResponse.json({
     agents: results,
     summary: { online, total: results.length },
