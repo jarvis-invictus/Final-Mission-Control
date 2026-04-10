@@ -1,0 +1,38 @@
+services:
+  mission-control:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: invictus-mission-control
+    restart: unless-stopped
+    ports:
+      - "3100:3000"
+    environment:
+      - NODE_ENV=production
+      - DOCS_PATH=/workspace/docs
+      - AGENTS_WORKSPACE_ROOT=/workspace/agents
+      - GITHUB_PAT=${GITHUB_PAT}
+    volumes:
+      # Shared docs
+      - /opt/invictus-workspace/docs:/workspace/docs:ro
+      # Agent workspaces (read-write for editing SOUL/MEMORY)
+      - /docker/openclaw-elon/data/.openclaw/workspace:/workspace/agents/elon
+      - /docker/openclaw-closer/data/.openclaw/workspace:/workspace/agents/jordan
+      - /docker/openclaw-ogilvy/data/.openclaw/workspace:/workspace/agents/gary
+      - /docker/openclaw-forge/data/.openclaw/workspace:/workspace/agents/linus
+      - /docker/openclaw-friend/data/.openclaw/workspace:/workspace/agents/friend
+      - /docker/openclaw-v1yl/data/.openclaw/workspace:/workspace/agents/jarvis
+      # Docker socket for system audit
+      - /var/run/docker.sock:/var/run/docker.sock
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mission-control.rule=Host(`control.invictus-ai.in`)"
+      - "traefik.http.routers.mission-control.entrypoints=websecure"
+      - "traefik.http.routers.mission-control.tls.certresolver=letsencrypt"
+      - "traefik.http.services.mission-control.loadbalancer.server.port=3000"
+    networks:
+      - traefik_shared
+
+networks:
+  traefik_shared:
+    external: true
