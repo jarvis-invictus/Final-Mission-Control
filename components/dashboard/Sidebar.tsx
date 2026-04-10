@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Users, Mail, FileText, Bot,
   Globe, ChevronLeft, ChevronRight,
   Zap, Search, LogOut, Clock, Calendar,
-  AlertTriangle, ClipboardList, Package, BookOpen, HardDrive, Github, CheckCircle2
+  AlertTriangle, ClipboardList, Package, BookOpen, HardDrive, Github, CheckCircle2, Radio
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import { clsx } from "clsx";
@@ -59,6 +59,8 @@ const sections: NavSection[] = [
       { icon: Github, label: "GitHub", href: "/github" },
       { icon: Zap, label: "Go High Level", href: "/ghl" },
       { icon: HardDrive, label: "System Audit", href: "/audit" },
+      { icon: Radio, label: "Intel", href: "/intel" },
+      { icon: Calendar, label: "Meetings", href: "/meetings" },
     ],
   },
   {
