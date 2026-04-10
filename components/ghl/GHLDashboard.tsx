@@ -137,7 +137,7 @@ function DetailRow({ label, value, mono }: { label: string; value: string; mono?
 /*  MAIN COMPONENT                                                     */
 /* ================================================================ */
 
-type Tab = "overview" | "contacts" | "pipeline" | "conversations" | "calendars";
+type Tab = "overview" | "contacts" | "pipeline" | "conversations" | "calendars" | "tags" | "reports";
 
 export default function GHLDashboard() {
   const [data, setData] = useState<GHLData | null>(null);
@@ -258,6 +258,8 @@ export default function GHLDashboard() {
     { key: "pipeline" as Tab, label: "Pipeline", icon: ArrowRight },
     { key: "conversations" as Tab, label: "Conversations", icon: MessageSquare },
     { key: "calendars" as Tab, label: "Calendars", icon: Calendar },
+    { key: "tags" as Tab, label: "Tags", icon: Tag },
+    { key: "reports" as Tab, label: "Reports", icon: BarChart3 },
   ];
 
   return (
@@ -714,6 +716,16 @@ export default function GHLDashboard() {
         </>
       )}
 
+      {/* ======================= TAGS TAB ======================= */}
+      {activeTab === "tags" && (
+        <TagsTab />
+      )}
+
+      {/* ======================= REPORTS TAB ======================= */}
+      {activeTab === "reports" && (
+        <ReportsTab />
+      )}
+
       {/* ======================= CREATE CONTACT MODAL ======================= */}
       {showCreateContact && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setShowCreateContact(false)}>
@@ -778,6 +790,115 @@ export default function GHLDashboard() {
                 Create in GHL
               </button>
             </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ================================================================ */
+/*  TAGS TAB                                                        */
+/* ================================================================ */
+function TagsTab() {
+  const [tags, setTags] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/ghl?section=tags")
+      .then(r => r.json())
+      .then(d => { setTags(d?.tags || []); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-brand-400" /></div>;
+
+  return (
+    <div className="space-y-4 animate-fadeInUp">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+          <Tag className="w-5 h-5 text-brand-400" /> Tags ({tags.length})
+        </h2>
+      </div>
+      {tags.length === 0 ? (
+        <div className="text-center py-12 text-zinc-500">No tags found in GHL</div>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          {tags.map((tag: any) => (
+            <span key={tag.id || tag.name} className="px-3 py-1.5 text-sm glass rounded-xl text-zinc-300 hover:text-brand-400 hover:border-brand-400/30 transition-all cursor-default">
+              <Tag className="w-3.5 h-3.5 inline mr-1.5 text-brand-400" />{tag.name}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ================================================================ */
+/*  REPORTS TAB                                                     */
+/* ================================================================ */
+function ReportsTab() {
+  const [report, setReport] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/ghl?section=report")
+      .then(r => r.json())
+      .then(d => setReport(d))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-brand-400" /></div>;
+  if (!report) return <div className="text-center py-12 text-zinc-500">Failed to generate report</div>;
+
+  const s = report.summary || {};
+  const currency = (n: number) => `₹${(n / 100).toLocaleString("en-IN")}`;
+
+  return (
+    <div className="space-y-6 animate-fadeInUp">
+      <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+        <BarChart3 className="w-5 h-5 text-brand-400" /> GHL Report
+      </h2>
+
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[
+          { label: "Total Contacts", value: s.totalContacts || 0, color: "text-blue-400" },
+          { label: "Open Deals", value: s.openDeals || 0, color: "text-amber-400" },
+          { label: "Won Deals", value: s.wonDeals || 0, color: "text-emerald-400" },
+          { label: "Pipeline Value", value: currency(s.totalPipelineValue || 0), color: "text-brand-400" },
+          { label: "Won Value", value: currency(s.wonValue || 0), color: "text-emerald-400" },
+          { label: "Conversations", value: s.totalConversations || 0, color: "text-violet-400" },
+          { label: "Calendars", value: s.totalCalendars || 0, color: "text-cyan-400" },
+          { label: "Total Opportunities", value: s.totalOpportunities || 0, color: "text-pink-400" },
+        ].map(item => (
+          <div key={item.label} className="glass rounded-xl p-4">
+            <p className="text-xs text-zinc-500 mb-1">{item.label}</p>
+            <p className={clsx("text-xl font-bold", item.color)}>
+              {typeof item.value === "number" ? item.value.toLocaleString() : item.value}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {/* Tag distribution */}
+      {report.tagDistribution && report.tagDistribution.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold text-zinc-300 mb-3">Tag Distribution</h3>
+          <div className="space-y-2">
+            {report.tagDistribution.slice(0, 15).map((t: any) => (
+              <div key={t.tag} className="flex items-center gap-3">
+                <span className="text-xs text-zinc-400 w-32 truncate">{t.tag}</span>
+                <div className="flex-1 h-2 bg-surface-3 rounded-full overflow-hidden">
+                  <div className="h-full bg-brand-400 rounded-full"
+                    style={{ width: `${Math.min(100, (t.count / (report.tagDistribution[0]?.count || 1)) * 100)}%` }} />
+                </div>
+                <span className="text-xs text-zinc-500 w-8 text-right">{t.count}</span>
+              </div>
+            ))}
           </div>
         </div>
       )}

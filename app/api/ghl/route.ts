@@ -154,6 +154,55 @@ export async function GET(req: NextRequest) {
         return NextResponse.json(data);
       }
 
+      case "tags": {
+        const data = await ghlFetch("/tags/", { locationId: GHL_LOC });
+        return NextResponse.json(data);
+      }
+
+      case "report": {
+        /* Build a report from multiple GHL endpoints */
+        const [contacts, opps, convos, cals] = await Promise.all([
+          ghlFetch("/contacts/", { locationId: GHL_LOC, limit: "100" }),
+          ghlFetch(`/opportunities/search`, { location_id: GHL_LOC, limit: "100" }),
+          ghlFetch("/conversations/search", { locationId: GHL_LOC, limit: "100" }),
+          ghlFetch("/calendars/", { locationId: GHL_LOC }),
+        ]);
+        const contactList = contacts?.contacts || [];
+        const oppList = opps?.opportunities || [];
+        const wonDeals = oppList.filter((o: any) => o.status === "won");
+        const openDeals = oppList.filter((o: any) => o.status === "open");
+        const totalValue = oppList.reduce((s: number, o: any) => s + (o.monetaryValue || 0), 0);
+        const wonValue = wonDeals.reduce((s: number, o: any) => s + (o.monetaryValue || 0), 0);
+
+        /* Tag distribution */
+        const tagCounts: Record<string, number> = {};
+        contactList.forEach((c: any) => {
+          (c.tags || []).forEach((t: string) => { tagCounts[t] = (tagCounts[t] || 0) + 1; });
+        });
+
+        return NextResponse.json({
+          summary: {
+            totalContacts: contactList.length,
+            totalOpportunities: oppList.length,
+            openDeals: openDeals.length,
+            wonDeals: wonDeals.length,
+            totalPipelineValue: totalValue,
+            wonValue,
+            totalConversations: convos?.total || 0,
+            totalCalendars: cals?.calendars?.length || 0,
+          },
+          tagDistribution: Object.entries(tagCounts)
+            .map(([tag, count]) => ({ tag, count }))
+            .sort((a, b) => b.count - a.count),
+          dealsByStage: oppList.reduce((acc: Record<string, number>, o: any) => {
+            const stage = o.pipelineStageId || "unknown";
+            acc[stage] = (acc[stage] || 0) + 1;
+            return acc;
+          }, {}),
+          timestamp: new Date().toISOString(),
+        });
+      }
+
       default:
         return NextResponse.json({ error: `Unknown section: ${section}` }, { status: 400 });
     }
