@@ -1,368 +1,375 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
-  Radio, Flame, Zap, Bookmark, ExternalLink, Plus, X, Loader2,
-  Trash2, Clock, TrendingUp, Eye, RefreshCw, Sparkles, Search, Scissors,
-  Brain, Globe, Target, Lightbulb, BarChart2, Shield, Rss,
-  Building2, DollarSign, Users, Cpu,
+  Search, Loader2, RefreshCw, Zap, ExternalLink, ChevronDown, ChevronUp,
+  Cpu, Package, Rocket, Globe, Star, ArrowRight, X,
 } from "lucide-react";
 import { clsx } from "clsx";
 
+type Tab = "ai-market" | "tools" | "search";
+
 interface IntelItem {
-  id: string; title: string; summary: string; source: string;
-  category: string; importance: string; dateAdded: string;
+  id: string;
+  title: string;
+  summary: string;
+  source: string;
+  category: string;
+  importance: string;
+  dateAdded: string;
 }
 
-const CATEGORIES = [
-  { key: "all",              label: "All",              icon: Radio },
-  { key: "competitor-watch", label: "Competitors",      icon: Eye },
-  { key: "opportunities",    label: "Opportunities",    icon: Target },
-  { key: "industry-trends",  label: "Trends",           icon: TrendingUp },
-  { key: "lead-gen",         label: "Lead Gen",         icon: Users },
-  { key: "ai-tools",         label: "AI Tools",         icon: Cpu },
-  { key: "ai-news",          label: "AI News",          icon: Brain },
-  { key: "india-market",     label: "India Market",     icon: Globe },
-  { key: "pricing-intel",    label: "Pricing",          icon: DollarSign },
-  { key: "client-intel",     label: "Clients",          icon: Building2 },
-  { key: "regulation",       label: "Regulation",       icon: Shield },
-  { key: "automation",       label: "Automation",       icon: Zap },
-  { key: "content-trends",   label: "Content",          icon: Rss },
-  { key: "funding",          label: "Funding",          icon: BarChart2 },
-  { key: "product-ideas",    label: "Product Ideas",    icon: Lightbulb },
-];
-
-const TIME_FILTERS = [
-  { key: "all",   label: "All Time" },
-  { key: "week",  label: "This Week" },
-  { key: "month", label: "This Month" },
-  { key: "today", label: "Today" },
-];
-
-const IMPORTANCE_BADGE: Record<string, { emoji: string; color: string }> = {
-  hot:       { emoji: "🔥", color: "bg-red-500/10 text-red-400 border-red-500/20" },
-  notable:   { emoji: "⚡", color: "bg-amber-500/10 text-amber-400 border-amber-500/20" },
-  reference: { emoji: "📌", color: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20" },
+const IMPORTANCE_COLORS: Record<string, string> = {
+  hot: "bg-red-500/10 text-red-400 border-red-500/20",
+  notable: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+  reference: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20",
 };
 
-const CATEGORY_COLORS: Record<string, string> = {
-  "competitor-watch": "text-red-400",
-  "opportunities":    "text-emerald-400",
-  "industry-trends":  "text-amber-400",
-  "lead-gen":         "text-blue-400",
-  "ai-tools":         "text-violet-400",
-  "ai-news":          "text-purple-400",
-  "india-market":     "text-orange-400",
-  "pricing-intel":    "text-brand-400",
-  "client-intel":     "text-cyan-400",
-  "regulation":       "text-red-300",
-  "automation":       "text-teal-400",
-  "content-trends":   "text-pink-400",
-  "funding":          "text-yellow-400",
-  "product-ideas":    "text-lime-400",
-};
+const TAB_CONFIG = [
+  { id: "ai-market" as Tab, label: "AI Market", icon: Cpu, desc: "AI news, startups, funding" },
+  { id: "tools" as Tab, label: "Tools & Platforms", icon: Package, desc: "Self-hosted, open source" },
+  { id: "search" as Tab, label: "Search & Discover", icon: Search, desc: "Research anything" },
+];
+
+function IntelCard({ item, onDeepDive }: { item: IntelItem; onDeepDive: (title: string) => void }) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="bg-surface-2 rounded-xl border border-white/5 hover:border-brand-400/10 transition-all">
+      <button onClick={() => setExpanded(!expanded)} className="w-full text-left p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className={clsx("text-[10px] px-2 py-0.5 rounded-full border font-medium",
+                IMPORTANCE_COLORS[item.importance] || IMPORTANCE_COLORS.reference
+              )}>
+                {item.importance === "hot" ? "🔥 HOT" : item.importance === "notable" ? "⭐ Notable" : "📌 Ref"}
+              </span>
+              <span className="text-[10px] text-zinc-600">{item.category}</span>
+            </div>
+            <h3 className="text-sm font-semibold text-white leading-snug">{item.title}</h3>
+            {!expanded && (
+              <p className="text-xs text-zinc-500 mt-1 line-clamp-2">{item.summary}</p>
+            )}
+          </div>
+          {expanded ? <ChevronUp className="w-4 h-4 text-zinc-500 flex-shrink-0" /> : <ChevronDown className="w-4 h-4 text-zinc-500 flex-shrink-0" />}
+        </div>
+      </button>
+
+      {expanded && (
+        <div className="px-4 pb-4 space-y-3 border-t border-white/5 pt-3">
+          <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">{item.summary}</p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {item.source && item.source.startsWith("http") ? (
+                <a href={item.source} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-xs text-brand-400 hover:underline">
+                  <ExternalLink className="w-3 h-3" /> Source
+                </a>
+              ) : (
+                <span className="text-xs text-zinc-600">📎 {item.source}</span>
+              )}
+              <span className="text-[10px] text-zinc-600">{new Date(item.dateAdded).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</span>
+            </div>
+            <button onClick={() => onDeepDive(item.title)}
+              className="flex items-center gap-1 text-xs text-violet-400 hover:text-violet-300 transition-colors">
+              <Zap className="w-3 h-3" /> Deep Dive
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function IntelView() {
-  const [items, setItems]         = useState<IntelItem[]>([]);
-  const [loading, setLoading]     = useState(true);
+  const [tab, setTab] = useState<Tab>("ai-market");
+  const [items, setItems] = useState<IntelItem[]>([]);
+  const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
-  const [filter, setFilter]       = useState("all");
-  const [timeFilter, setTimeFilter] = useState("all");
-  const [search, setSearch]       = useState("");
-  const [showAdd, setShowAdd]     = useState(false);
-  const [form, setForm]           = useState({ title: "", summary: "", source: "", category: "opportunities", importance: "notable" });
-  const [adding, setAdding]       = useState(false);
-  const [editId, setEditId]       = useState<string | null>(null);
-  const [dedupMsg, setDedupMsg]   = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResult, setSearchResult] = useState<any>(null);
+  const [searching, setSearching] = useState(false);
+  const [deepDive, setDeepDive] = useState<{ title: string; content: string } | null>(null);
+  const [deepDiving, setDeepDiving] = useState(false);
+  const [toolsItems, setToolsItems] = useState<IntelItem[]>([]);
 
-  const load = async () => {
+  // Load existing intel items
+  const loadItems = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/intel");
-      const data = await res.json();
-      setItems(data.items || []);
+      const r = await fetch("/api/intel");
+      const d = await r.json();
+      setItems(d.items || []);
     } catch {} finally { setLoading(false); }
-  };
+  }, []);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { loadItems(); }, [loadItems]);
 
-  const handleGenerate = async () => {
+  // Generate fresh AI intel
+  const generateFeed = async (category: string) => {
     setGenerating(true);
     try {
-      const res = await fetch("/api/intel", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "generate" }) });
-      const d = await res.json();
-      if (d.error) alert(`AI Refresh error: ${d.error}`);
-      await load();
+      const r = await fetch("/api/intel/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "generate-feed", topic: category }),
+      });
+      const d = await r.json();
+      if (d.items) {
+        if (category === "tools" || category === "startups") {
+          setToolsItems(d.items);
+        } else {
+          // Save to main intel
+          for (const item of d.items) {
+            await fetch("/api/intel", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ action: "create", ...item }),
+            });
+          }
+          await loadItems();
+        }
+      }
     } catch {} finally { setGenerating(false); }
   };
 
-  const handleAdd = async () => {
-    if (!form.title) return;
-    setAdding(true);
-    await fetch("/api/intel", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", ...form }) });
-    setForm({ title: "", summary: "", source: "", category: "opportunities", importance: "notable" });
-    setShowAdd(false);
-    await load();
-    setAdding(false);
-  };
-
-  const handleDelete = async (id: string) => {
-    await fetch("/api/intel", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "delete", id }) });
-    setItems(prev => prev.filter(i => i.id !== id));
-  };
-
-  const handleDedup = async () => {
+  // Search
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+    setSearching(true);
+    setSearchResult(null);
     try {
-      const res = await fetch("/api/intel", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "dedup" }) });
-      const d = await res.json();
-      if (d.removed > 0) {
-        setDedupMsg("\u2705 Removed " + d.removed + " duplicate(s). " + d.remaining + " items remain.");
-        await load();
-      } else {
-        setDedupMsg("No duplicates found.");
-      }
-      setTimeout(() => setDedupMsg(""), 5000);
-    } catch { setDedupMsg("\u274c Dedup failed"); setTimeout(() => setDedupMsg(""), 5000); }
+      const r = await fetch("/api/intel/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "search", query: searchQuery }),
+      });
+      const d = await r.json();
+      setSearchResult(d);
+    } catch {} finally { setSearching(false); }
   };
 
-  const now = new Date();
-  const filtered = items.filter(i => {
-    const catMatch = filter === "all" || i.category === filter;
-    const date = new Date(i.dateAdded);
-    let timeMatch = true;
-    if (timeFilter === "today") {
-      timeMatch = date.toDateString() === now.toDateString();
-    } else if (timeFilter === "week") {
-      const ago = new Date(now); ago.setDate(ago.getDate() - 7); timeMatch = date >= ago;
-    } else if (timeFilter === "month") {
-      const ago = new Date(now); ago.setMonth(ago.getMonth() - 1); timeMatch = date >= ago;
-    }
-    const q = search.toLowerCase();
-    const searchMatch = !q || i.title.toLowerCase().includes(q) || i.summary.toLowerCase().includes(q) || i.category.toLowerCase().includes(q) || (i.source || "").toLowerCase().includes(q);
-    return catMatch && timeMatch && searchMatch;
+  // Deep dive
+  const handleDeepDive = async (title: string) => {
+    setDeepDiving(true);
+    setDeepDive({ title, content: "" });
+    try {
+      const r = await fetch("/api/intel/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "deep-dive", query: title }),
+      });
+      const d = await r.json();
+      setDeepDive({ title, content: d.analysis || "No analysis available." });
+    } catch {
+      setDeepDive({ title, content: "Failed to generate analysis." });
+    } finally { setDeepDiving(false); }
+  };
+
+  const filteredItems = items.filter(i => {
+    if (tab === "ai-market") return true; // Show all for now
+    return true;
   });
 
-  const dailyBrief = items.filter(i => i.importance === "hot")
-    .sort((a, b) => new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime())
-    .slice(0, 5);
-
-  // Category counts
-  const catCounts = items.reduce((acc: Record<string, number>, i) => {
-    acc[i.category] = (acc[i.category] || 0) + 1; return acc;
-  }, {});
-
   return (
-    <div className="p-6 space-y-5 max-w-[1600px] mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-surface-3 border border-white/10 flex items-center justify-center">
-            <Radio className="w-5 h-5 text-brand-400" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-white">📡 Intel</h1>
-            <p className="text-sm text-zinc-500">{items.length} items · {filtered.length} shown</p>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={load} title="Hard refresh"
-            className="p-2 rounded-xl border border-white/10 text-zinc-400 hover:text-white hover:bg-surface-2 transition-all">
-            <RefreshCw className={clsx("w-4 h-4", loading && "animate-spin")} />
+    <div className="space-y-6 max-w-5xl">
+      {/* Tabs */}
+      <div className="flex gap-2 flex-wrap">
+        {TAB_CONFIG.map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)}
+            className={clsx(
+              "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all border",
+              tab === t.id
+                ? "bg-brand-400/10 text-brand-400 border-brand-400/20"
+                : "bg-surface-2 text-zinc-400 border-white/5 hover:text-white"
+            )}>
+            <t.icon className="w-4 h-4" />
+            {t.label}
+            <span className="text-[10px] text-zinc-600 hidden sm:inline">· {t.desc}</span>
           </button>
-          <button onClick={handleGenerate} disabled={generating}
-            className="flex items-center gap-2 px-3 py-2 bg-violet-500/10 text-violet-400 rounded-xl border border-violet-500/20 hover:bg-violet-500/20 text-sm font-medium transition-all disabled:opacity-50">
-            {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-            {generating ? "Generating…" : "AI Refresh"}
-          </button>
-          <button onClick={handleDedup} title="Remove duplicate entries"
-            className="flex items-center gap-2 px-3 py-2 bg-amber-500/10 text-amber-400 rounded-xl border border-amber-500/20 hover:bg-amber-500/20 text-sm font-medium transition-all">
-            <Scissors className="w-4 h-4" /> Dedup
-          </button>
-          <button onClick={() => setShowAdd(!showAdd)}
-            className="flex items-center gap-2 px-4 py-2 bg-brand-400/10 text-brand-400 rounded-xl border border-brand-400/20 hover:bg-brand-400/20 text-sm font-medium transition-all">
-            <Plus className="w-4 h-4" /> Add
-          </button>
-        </div>
+        ))}
       </div>
 
-      {/* Search bar */}
-      <div className="relative">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
-        <input
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder="Search intel by title, summary, source, category…"
-          className="w-full pl-10 pr-4 py-2.5 bg-surface-2 border border-white/5 rounded-xl text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-brand-400/30"
-        />
-        {search && (
-          <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-white">
-            <X className="w-4 h-4" />
-          </button>
-        )}
-      </div>
-
-      {dedupMsg && (
-        <div className={"px-4 py-2 rounded-xl text-sm " + (dedupMsg.startsWith("\u2705") ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : dedupMsg.startsWith("\u274c") ? "bg-red-500/10 text-red-400 border border-red-500/20" : "bg-zinc-500/10 text-zinc-400 border border-zinc-500/20")}>
-          {dedupMsg}
+      {/* Deep Dive Modal */}
+      {deepDive && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+          onClick={() => setDeepDive(null)}>
+          <div className="bg-surface-1 rounded-2xl border border-white/10 w-full max-w-3xl max-h-[80vh] overflow-hidden flex flex-col"
+            onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-5 border-b border-white/5">
+              <div>
+                <h2 className="text-lg font-bold text-white">{deepDive.title}</h2>
+                <p className="text-xs text-zinc-500 mt-0.5">In-depth AI Analysis</p>
+              </div>
+              <button onClick={() => setDeepDive(null)} className="p-2 hover:bg-white/5 rounded-xl">
+                <X className="w-5 h-5 text-zinc-400" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-5">
+              {deepDiving ? (
+                <div className="flex items-center justify-center py-16 gap-3">
+                  <Loader2 className="w-6 h-6 animate-spin text-brand-400" />
+                  <span className="text-zinc-400 text-sm">Researching in depth...</span>
+                </div>
+              ) : (
+                <div className="prose prose-sm prose-invert max-w-none">
+                  <div className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">{deepDive.content}</div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Add form */}
-      {showAdd && (
-        <div className="glass rounded-xl p-5 space-y-3 animate-fadeInUp border border-brand-400/10">
-          <input value={form.title} onChange={e => setForm(f => ({...f, title: e.target.value}))}
-            placeholder="Title" className="w-full px-4 py-2.5 bg-surface-2 border border-white/5 rounded-xl text-sm text-zinc-200 focus:outline-none focus:border-brand-400/30" />
-          <textarea value={form.summary} onChange={e => setForm(f => ({...f, summary: e.target.value}))}
-            placeholder="Summary / why it matters" rows={3}
-            className="w-full px-4 py-2.5 bg-surface-2 border border-white/5 rounded-xl text-sm text-zinc-200 focus:outline-none focus:border-brand-400/30 resize-none" />
-          <div className="flex gap-3 flex-wrap">
-            <input value={form.source} onChange={e => setForm(f => ({...f, source: e.target.value}))}
-              placeholder="Source URL or name" className="flex-1 min-w-[160px] px-4 py-2.5 bg-surface-2 border border-white/5 rounded-xl text-sm text-zinc-200 focus:outline-none focus:border-brand-400/30" />
-            <select value={form.category} onChange={e => setForm(f => ({...f, category: e.target.value}))}
-              className="px-3 py-2.5 bg-surface-2 border border-white/5 rounded-xl text-sm text-zinc-200">
-              {CATEGORIES.filter(c => c.key !== "all").map(c => (
-                <option key={c.key} value={c.key}>{c.label}</option>
-              ))}
-            </select>
-            <select value={form.importance} onChange={e => setForm(f => ({...f, importance: e.target.value}))}
-              className="px-3 py-2.5 bg-surface-2 border border-white/5 rounded-xl text-sm text-zinc-200">
-              <option value="hot">🔥 Hot</option>
-              <option value="notable">⚡ Notable</option>
-              <option value="reference">📌 Reference</option>
-            </select>
-          </div>
-          <div className="flex justify-end gap-2">
-            <button onClick={() => setShowAdd(false)} className="px-4 py-2 text-sm text-zinc-400 hover:text-white">Cancel</button>
-            <button onClick={handleAdd} disabled={!form.title || adding}
-              className="px-5 py-2 bg-brand-400 text-black text-sm font-semibold rounded-xl disabled:opacity-40 flex items-center gap-2">
-              {adding && <Loader2 className="w-3.5 h-3.5 animate-spin" />} Add Intel
+      {/* Tab Content */}
+      {tab === "ai-market" && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <Cpu className="w-5 h-5 text-brand-400" /> AI Market Intelligence
+            </h2>
+            <button onClick={() => generateFeed("ai-market")} disabled={generating}
+              className="flex items-center gap-2 px-4 py-2 bg-violet-500/10 text-violet-400 rounded-xl border border-violet-500/20 hover:bg-violet-500/20 text-sm font-medium transition-all disabled:opacity-50">
+              {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+              {generating ? "Generating..." : "AI Refresh"}
             </button>
           </div>
+          {loading ? (
+            <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-brand-400" /></div>
+          ) : filteredItems.length === 0 ? (
+            <div className="text-center py-12">
+              <Cpu className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
+              <p className="text-zinc-500">No intel items yet</p>
+              <button onClick={() => generateFeed("ai-market")} className="text-sm text-brand-400 hover:underline mt-2">Generate AI Market Feed</button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredItems.map(item => <IntelCard key={item.id} item={item} onDeepDive={handleDeepDive} />)}
+            </div>
+          )}
         </div>
       )}
 
-      {/* Hot Brief */}
-      {dailyBrief.length > 0 && !search && filter === "all" && (
-        <div className="glass rounded-xl p-4 border border-red-500/10">
-          <h2 className="text-xs font-bold text-red-400 uppercase tracking-wide mb-3 flex items-center gap-2">
-            <Flame className="w-3.5 h-3.5" /> Hot Right Now ({dailyBrief.length})
+      {tab === "tools" && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <Package className="w-5 h-5 text-emerald-400" /> Tools & Platforms
+            </h2>
+            <div className="flex gap-2">
+              <button onClick={() => generateFeed("tools")} disabled={generating}
+                className="flex items-center gap-2 px-3 py-2 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20 text-sm font-medium transition-all disabled:opacity-50">
+                {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Package className="w-4 h-4" />}
+                Self-Hosted Tools
+              </button>
+              <button onClick={() => generateFeed("startups")} disabled={generating}
+                className="flex items-center gap-2 px-3 py-2 bg-violet-500/10 text-violet-400 rounded-xl border border-violet-500/20 text-sm font-medium transition-all disabled:opacity-50">
+                {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Rocket className="w-4 h-4" />}
+                Startups
+              </button>
+            </div>
+          </div>
+
+          {toolsItems.length === 0 ? (
+            <div className="text-center py-12">
+              <Package className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
+              <p className="text-zinc-500">Click a button above to discover tools & platforms</p>
+              <p className="text-xs text-zinc-600 mt-1">AI will find self-hosted tools, open-source gems, and useful startups</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {toolsItems.map(item => <IntelCard key={item.id} item={item} onDeepDive={handleDeepDive} />)}
+            </div>
+          )}
+        </div>
+      )}
+
+      {tab === "search" && (
+        <div className="space-y-4">
+          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+            <Search className="w-5 h-5 text-blue-400" /> Search & Discover
           </h2>
-          <div className="space-y-2">
-            {dailyBrief.map(item => (
-              <div key={item.id} className="flex items-start gap-3 p-3 bg-red-500/5 rounded-xl border border-red-500/10">
-                <span className="text-base mt-0.5">🔥</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-white leading-snug">{item.title}</p>
-                  {item.summary && <p className="text-xs text-zinc-400 mt-0.5 line-clamp-2">{item.summary}</p>}
-                </div>
-                <span className={clsx("text-[10px] shrink-0 capitalize", CATEGORY_COLORS[item.category] || "text-zinc-500")}>
-                  {item.category.replace(/-/g, " ")}
-                </span>
-              </div>
+          <p className="text-sm text-zinc-500">Ask anything — AI will research it in depth using real-time data.</p>
+
+          {/* Search bar */}
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
+              <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && handleSearch()}
+                placeholder="e.g. best self-hosted CRM alternatives to HubSpot, latest AI model benchmarks..."
+                className="w-full pl-10 pr-4 py-3 bg-surface-2 border border-white/5 rounded-xl text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-brand-400/30" />
+            </div>
+            <button onClick={handleSearch} disabled={searching || !searchQuery.trim()}
+              className="px-6 py-3 bg-blue-500/10 text-blue-400 rounded-xl border border-blue-500/20 hover:bg-blue-500/20 text-sm font-medium transition-all disabled:opacity-50">
+              {searching ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
+            </button>
+          </div>
+
+          {/* Quick search suggestions */}
+          <div className="flex gap-2 flex-wrap">
+            {[
+              "Latest open source LLMs 2026",
+              "Self-hosted email marketing alternatives",
+              "AI website builder competitors India",
+              "n8n vs Make vs Zapier comparison",
+              "Best self-hosted CRM for agencies",
+              "AI chatbot platforms for SMBs",
+              "Postal SMTP deliverability tips",
+              "Indian SaaS startups to watch",
+            ].map(q => (
+              <button key={q} onClick={() => { setSearchQuery(q); }}
+                className="text-[10px] px-2.5 py-1 bg-white/5 text-zinc-500 rounded-lg hover:text-zinc-300 hover:bg-white/10 transition-colors">
+                {q}
+              </button>
             ))}
           </div>
-        </div>
-      )}
 
-      {/* Filters row */}
-      <div className="space-y-2">
-        {/* Time */}
-        <div className="flex gap-1 p-1 bg-surface-2 rounded-xl border border-white/5 w-fit">
-          {TIME_FILTERS.map(t => (
-            <button key={t.key} onClick={() => setTimeFilter(t.key)}
-              className={clsx("flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all",
-                timeFilter === t.key ? "bg-brand-400/20 text-brand-400" : "text-zinc-500 hover:text-white"
-              )}>
-              <Clock className="w-3 h-3" /> {t.label}
-            </button>
-          ))}
-        </div>
-        {/* Categories — scrollable chips */}
-        <div className="flex gap-1.5 flex-wrap">
-          {CATEGORIES.map(c => {
-            const count = c.key === "all" ? items.length : (catCounts[c.key] || 0);
-            return (
-              <button key={c.key} onClick={() => setFilter(c.key)}
-                className={clsx(
-                  "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full border transition-all",
-                  filter === c.key
-                    ? "bg-brand-400/20 text-brand-400 border-brand-400/30"
-                    : "text-zinc-500 border-white/5 hover:text-white hover:border-white/10 bg-surface-2"
-                )}>
-                <c.icon className="w-3 h-3" />
-                {c.label}
-                {count > 0 && <span className="text-[9px] opacity-60 ml-0.5">{count}</span>}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+          {/* Search Results */}
+          {searching && (
+            <div className="flex items-center justify-center py-16 gap-3">
+              <Loader2 className="w-6 h-6 animate-spin text-blue-400" />
+              <span className="text-zinc-400 text-sm">Researching...</span>
+            </div>
+          )}
 
-      {/* Empty state */}
-      {!loading && filtered.length === 0 && (
-        <div className="text-center py-16 space-y-3">
-          <Radio className="w-10 h-10 mx-auto text-zinc-700" />
-          <p className="text-zinc-500 text-sm">
-            {search ? `No results for "${search}"` : `No intel for "${filter}" · ${timeFilter}`}
-          </p>
-          <button onClick={handleGenerate} disabled={generating}
-            className="mx-auto flex items-center gap-2 px-4 py-2 bg-violet-500/10 text-violet-400 rounded-xl border border-violet-500/20 text-sm hover:bg-violet-500/20 transition-all">
-            <Sparkles className="w-4 h-4" /> Generate with AI
-          </button>
-        </div>
-      )}
+          {searchResult && !searching && (
+            <div className="space-y-4">
+              {/* AI Analysis */}
+              <div className="bg-surface-2 rounded-xl border border-white/5 p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <Zap className="w-4 h-4 text-brand-400" />
+                  <h3 className="text-sm font-semibold text-white">AI Analysis: {searchResult.query}</h3>
+                </div>
+                <div className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">{searchResult.aiAnalysis}</div>
+              </div>
 
-      {/* Items list */}
-      {loading ? (
-        <div className="flex justify-center py-16"><Loader2 className="w-7 h-7 animate-spin text-brand-400" /></div>
-      ) : (
-        <div className="space-y-2">
-          {filtered.map((item, i) => {
-            const badge = IMPORTANCE_BADGE[item.importance] || IMPORTANCE_BADGE.reference;
-            const catColor = CATEGORY_COLORS[item.category] || "text-zinc-500";
-            const CatIcon = CATEGORIES.find(c => c.key === item.category)?.icon || Radio;
-            return (
-              <div key={item.id}
-                className="glass rounded-xl p-4 group hover:bg-white/[0.02] transition-all animate-fadeInUp"
-                style={{ animationDelay: `${Math.min(i * 0.02, 0.4)}s`, opacity: 0 }}>
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                      <span className={clsx("px-2 py-0.5 text-[10px] font-semibold rounded-full border", badge.color)}>
-                        {badge.emoji} {item.importance}
-                      </span>
-                      <span className={clsx("flex items-center gap-1 text-[10px] font-medium capitalize", catColor)}>
-                        <CatIcon className="w-3 h-3" />
-                        {item.category.replace(/-/g, " ")}
-                      </span>
-                      <span className="text-[10px] text-zinc-600">
-                        {new Date(item.dateAdded).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" })}
-                      </span>
-                    </div>
-                    <p className="text-sm font-semibold text-white leading-snug">{item.title}</p>
-                    {item.summary && <p className="text-xs text-zinc-400 mt-1 leading-relaxed">{item.summary}</p>}
-                    {item.source && (
-                      <a href={item.source.startsWith("http") ? item.source : "#"} target="_blank" rel="noopener noreferrer"
-                        className="text-[10px] text-zinc-600 hover:text-brand-400 mt-1 block truncate transition-colors">
-                        {item.source}
-                      </a>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                    {item.source?.startsWith("http") && (
-                      <a href={item.source} target="_blank" rel="noopener noreferrer"
-                        className="p-1.5 hover:bg-white/5 rounded-lg">
-                        <ExternalLink className="w-3.5 h-3.5 text-zinc-500" />
-                      </a>
-                    )}
-                    <button onClick={() => handleDelete(item.id)} className="p-1.5 hover:bg-red-500/10 rounded-lg">
-                      <Trash2 className="w-3.5 h-3.5 text-zinc-600 hover:text-red-400 transition-colors" />
-                    </button>
+              {/* Web Results */}
+              {searchResult.webResults?.length > 0 && (
+                <div className="bg-surface-2 rounded-xl border border-white/5 p-5">
+                  <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                    <Globe className="w-4 h-4 text-emerald-400" /> Related Resources
+                  </h3>
+                  <div className="space-y-3">
+                    {searchResult.webResults.map((r: any, i: number) => (
+                      <div key={i} className="flex items-start gap-3">
+                        <span className="text-[10px] text-zinc-600 font-mono mt-0.5">{i + 1}</span>
+                        <div>
+                          <p className="text-sm text-zinc-200">{r.title}</p>
+                          {r.summary !== r.title && <p className="text-xs text-zinc-500 mt-0.5 line-clamp-2">{r.summary}</p>}
+                          {r.source && (
+                            <a href={r.source} target="_blank" rel="noopener noreferrer"
+                              className="text-[10px] text-brand-400 hover:underline">{r.source}</a>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
