@@ -171,21 +171,9 @@ export default function CommandCenter() {
     return () => clearInterval(interval);
   }, [fetchData]);
 
-  /* Weather + live clock — use browser geolocation */
+  /* Weather + live clock — fixed location: Mamurdi, Pune */
   useEffect(() => {
-    const fetchWeather = (lat?: number, lon?: number) => {
-      const params = lat && lon ? `?lat=${lat}&lon=${lon}` : "";
-      fetch(`/api/weather${params}`).then(r => r.json()).then(setWeather).catch(() => {});
-    };
-    if (typeof navigator !== "undefined" && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => fetchWeather(pos.coords.latitude, pos.coords.longitude),
-        () => fetchWeather(),
-        { timeout: 5000 }
-      );
-    } else {
-      fetchWeather();
-    }
+    fetch("/api/weather?city=Mamurdi,Pune").then(r => r.json()).then(setWeather).catch(() => {});
     // Fetch live priorities from Jarvis
     fetch("/api/jarvis-priorities").then(r => r.json()).then(d => {
       if (d.priorities) setLivePriorities(d.priorities);
@@ -289,7 +277,7 @@ export default function CommandCenter() {
               {weather && weather.temp_C !== "?" && (
                 <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/5 border border-white/10">
                   {weather.weatherDesc === "Sunny" || weather.weatherDesc === "Clear" ? "☀️" : weather.weatherDesc.includes("Rain") ? "🌧️" : weather.weatherDesc.includes("Cloud") ? "☁️" : "🌤️"}
-                  {weather.temp_C}°C {weather.city || "Pune"} · {weather.weatherDesc}
+                  {weather.temp_C}°C Mamurdi, Pune · {weather.weatherDesc}
                 </span>
               )}
             </div>
