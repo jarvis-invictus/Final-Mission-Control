@@ -2,163 +2,135 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-const OR_KEY = process.env.OPENROUTER_API_KEY || "";
+const GEMINI_KEY = process.env.GEMINI_API_KEY || "";
 
-async function searchWeb(query: string): Promise<any[]> {
-  // Use web search via a free API
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000);
-    const res = await fetch("https://api.duckduckgo.com/?q=" + encodeURIComponent(query) + "&format=json&no_html=1&skip_disambig=1", {
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
-    if (res.ok) {
-      const data = await res.json();
-      const results: any[] = [];
-      if (data.AbstractText) {
-        results.push({ title: data.Heading || query, summary: data.AbstractText, source: data.AbstractURL || "DuckDuckGo", type: "summary" });
-      }
-      for (const topic of (data.RelatedTopics || []).slice(0, 8)) {
-        if (topic.Text) {
-          results.push({ title: topic.Text.slice(0, 80), summary: topic.Text, source: topic.FirstURL || "", type: "related" });
-        }
-      }
-      return results;
-    }
-  } catch {}
-  return [];
-}
+async function gemini(prompt: string, maxTokens = 4000): Promise<string> {
+  if (!GEMINI_KEY) return "⚠️ GEMINI_API_KEY not configured.";
 
-async function aiResearch(prompt: string): Promise<string> {
-  if (!OR_KEY) return "API key not configured. Add credits at https://openrouter.ai/settings/keys";
-  
-  // Try multiple models in order of preference
-  const models = [
-    "google/gemma-3-27b-it:free",
-    "google/gemma-3-12b-it:free",
-    "meta-llama/llama-3.3-70b-instruct:free",
-    "nousresearch/hermes-3-llama-3.1-405b:free",
-  ];
-  
+  const models = ["gemini-2.5-flash", "gemini-2.0-flash"];
+  const maxRetries = 3;
+
   for (const model of models) {
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 30000);
-      const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": "Bearer " + OR_KEY,
-          "Content-Type": "application/json",
-          "HTTP-Referer": "https://control.invictus-ai.in",
-        },
-        body: JSON.stringify({
-          model,
-          messages: [{ role: "user", content: prompt }],
-          temperature: 0.5,
-          max_tokens: 3000,
-        }),
-        signal: controller.signal,
-      });
-      clearTimeout(timeout);
-      if (res.ok) {
-        const data = await res.json();
-        const content = data.choices?.[0]?.message?.content;
-        if (content) return content;
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        if (attempt > 0) await new Promise(r => setTimeout(r, 3000 * attempt));
+
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 60000);
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_KEY}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: { maxOutputTokens: maxTokens, temperature: 0.6 },
+            }),
+            signal: controller.signal,
+          }
+        );
+        clearTimeout(timer);
+
+        const raw = await res.text();
+
+        if (!res.ok) {
+          let errCode = 0;
+          try { errCode = JSON.parse(raw)?.error?.code || 0; } catch {}
+          if (errCode === 429 || errCode === 503) continue; // Retry
+          if (errCode === 403) return "⚠️ API key issue — check Gemini API configuration.";
+          continue;
+        }
+
+        const data = JSON.parse(raw);
+        const parts: any[] = data.candidates?.[0]?.content?.parts || [];
+        const text = parts.filter((p: any) => !p.thought && p.text).map((p: any) => p.text).join("");
+        if (text) return text;
+      } catch {
+        continue;
       }
-      const err = await res.json().catch(() => ({}));
-      const code = (err as any)?.error?.code;
-      if (code === 403) return "API key limit reached ($4/$4 used). Add credits at https://openrouter.ai/settings/keys to enable Deep Dive and Search.";
-      if (code === 429) continue; // Try next model
-    } catch { continue; }
+    }
   }
-  return "All AI models are currently rate-limited. Try again in a few minutes, or add OpenRouter credits for guaranteed access.";
+  return "⏳ Gemini is temporarily rate-limited (free tier: 15 requests/minute). Wait 60 seconds and try again. To remove this limit, upgrade the Gemini API key to paid tier at https://ai.google.dev/pricing";
 }
 
-export async function POST(req: NextRequest): Promise<any> {
-  const body = await req.json();
-  const { action, query, topic } = body;
+function parseJsonArray(result: string): any[] | null {
+  let cleaned = result.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
+  const startIdx = cleaned.indexOf("[");
+  if (startIdx < 0) return null;
 
-  if (action === "search") {
-    if (!query) return NextResponse.json({ error: "Missing query" }, { status: 400 });
-
-    // AI-powered deep search
-    const prompt = "You are an AI business intelligence analyst. Research the following topic and provide detailed, actionable intelligence. Include specific numbers, company names, URLs where possible, and recent developments (2025-2026). Format with clear sections and bullet points.\n\nTopic: " + query;
-    const aiResult = await aiResearch(prompt);
-    const webResults = await searchWeb(query);
-
-    return NextResponse.json({
-      query,
-      aiAnalysis: aiResult,
-      webResults,
-      timestamp: new Date().toISOString(),
-    });
+  let endIdx = cleaned.lastIndexOf("]");
+  if (endIdx <= startIdx) {
+    // Truncated response — try to fix
+    const lastObj = cleaned.lastIndexOf("}");
+    if (lastObj > startIdx) {
+      cleaned = cleaned.slice(0, lastObj + 1) + "]";
+      endIdx = cleaned.length - 1;
+    } else return null;
   }
 
-  if (action === "generate-feed") {
-    const category = topic || "ai-market";
-    let prompt = "";
+  try {
+    return JSON.parse(cleaned.slice(startIdx, endIdx + 1));
+  } catch {
+    return null;
+  }
+}
 
-    if (category === "ai-market") {
-      prompt = `You are an AI market intelligence analyst. Generate 8 current AI market news items for April 2026. Focus on:
-- Major AI model releases and updates
-- AI startup funding rounds and acquisitions
-- AI regulation and policy changes globally
-- Open source AI developments
-- AI infrastructure (GPU, cloud, edge)
-- AI applications in business automation
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { action, query, topic } = body;
 
-For each item provide: title (specific, with company/product names), detailed summary (3-4 sentences with numbers), source URL or publication name, and importance (hot/notable/reference).
-
-Return ONLY a JSON array: [{"title":"...","summary":"...","source":"...","importance":"...","category":"ai-market"}]`;
-    } else if (category === "tools") {
-      prompt = `You are a self-hosted software expert. Generate 8 items about useful self-hosted tools and platforms that a tech company should know about in 2026. Focus on:
-- Self-hosted alternatives to popular SaaS (email, CRM, analytics, automation)
-- Unknown but powerful open-source tools
-- Developer tools and platforms
-- AI/ML self-hosted solutions
-- Monitoring, deployment, and DevOps tools
-- Communication and collaboration platforms
-
-For each item: title (specific tool name + what it does), detailed summary (3-4 sentences including GitHub stars, tech stack, deployment complexity), source (GitHub URL or official site), importance (hot/notable/reference).
-
-Return ONLY a JSON array: [{"title":"...","summary":"...","source":"...","importance":"...","category":"tools"}]`;
-    } else if (category === "startups") {
-      prompt = `You are a startup intelligence analyst. Generate 8 items about interesting startups (both well-known and under-the-radar) that are relevant to an AI web agency in 2026. Focus on:
-- AI-powered SaaS startups
-- Indian tech startups (especially B2B/SMB focused)
-- Tools that could be integrated or white-labeled
-- Competitors or potential partners
-- Startups solving similar problems (websites for SMBs, automation, chatbots)
-- YC-backed or bootstrapped gems
-
-For each: title, detailed summary (funding, traction, tech stack), source, importance.
-
-Return ONLY a JSON array: [{"title":"...","summary":"...","source":"...","importance":"...","category":"startups"}]`;
+    if (action === "search") {
+      if (!query) return NextResponse.json({ error: "Missing query" }, { status: 400 });
+      const prompt = `You are an elite AI business intelligence analyst. Research this topic and provide detailed, actionable analysis with specific numbers, company names, URLs, recent developments (2025-2026). Format with markdown (## sections, **bold**, bullet points). No fluff.\n\nTopic: ${query}`;
+      const result = await gemini(prompt, 3000);
+      return NextResponse.json({ query, aiAnalysis: result, timestamp: new Date().toISOString() });
     }
 
-    const result = await aiResearch(prompt);
-    try {
-      const cleaned = result.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-      const match = cleaned.match(/\[[\s\S]*\]/);
-      if (match) {
-        const items = JSON.parse(match[0]).map((item: any) => ({
+    if (action === "generate-feed") {
+      const category = topic || "ai-market-indian";
+      let prompt = "";
+
+      if (category === "ai-market-indian") {
+        prompt = `Generate 4 specific Indian AI market news items (April 2026). Real company names, numbers, events. Cover: startups, government policy, Indian language AI, infrastructure. Return ONLY JSON array:\n[{"title":"headline","summary":"3-4 sentences","source":"URL","importance":"hot|notable|useful","category":"indian"}]`;
+      } else if (category === "ai-market-global") {
+        prompt = `Generate 4 specific global AI market items (April 2026). Real names, numbers. Cover: model releases, funding, regulation, dev tools. Return ONLY JSON array:\n[{"title":"headline","summary":"3-4 sentences","source":"URL","importance":"hot|notable|useful","category":"global"}]`;
+      } else if (category === "tools") {
+        prompt = `Generate 4 useful tools/platforms for a tech agency (2026). Mix self-hosted, open-source, AI tools, dev platforms. Include pricing, GitHub stars. Return ONLY JSON array:\n[{"title":"Name — description","summary":"3-4 sentences","source":"URL","importance":"hot|notable|useful","category":"tools"}]`;
+      } else if (category === "startups") {
+        prompt = `Generate 4 interesting startups (AI/SaaS, India+global). Include funding, tech stack. Return ONLY JSON array:\n[{"title":"Name — description","summary":"3-4 sentences","source":"URL","importance":"hot|notable|useful","category":"startups"}]`;
+      } else {
+        return NextResponse.json({ error: "Unknown category" }, { status: 400 });
+      }
+
+      const result = await gemini(prompt, 2000);
+      
+      // Check if it's a rate limit message
+      if (result.startsWith("⏳") || result.startsWith("⚠️")) {
+        return NextResponse.json({ error: result }, { status: 429 });
+      }
+
+      const items = parseJsonArray(result);
+      if (items && items.length > 0) {
+        const enriched = items.map((item: any) => ({
           ...item,
           id: "gen-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6),
           dateAdded: new Date().toISOString(),
         }));
-        return NextResponse.json({ items, category });
+        return NextResponse.json({ items: enriched, category });
       }
-    } catch {}
-    return NextResponse.json({ error: "Failed to parse AI response", raw: result.slice(0, 500) }, { status: 500 });
-  }
+      return NextResponse.json({ error: "Could not parse AI response", raw: result.slice(0, 800) }, { status: 500 });
+    }
 
-  if (action === "deep-dive") {
-    if (!query) return NextResponse.json({ error: "Missing query" }, { status: 400 });
-    const prompt = "Provide an in-depth analysis of the following topic. Be comprehensive — include history, current state, key players, market size, technical details, pros/cons, alternatives, and future outlook. Use specific numbers, company names, and recent data (2025-2026). Write in a professional but readable style with clear sections.\n\nTopic: " + query;
-    const result = await aiResearch(prompt);
-    return NextResponse.json({ query, analysis: result, timestamp: new Date().toISOString() });
-  }
+    if (action === "deep-dive") {
+      if (!query) return NextResponse.json({ error: "Missing query" }, { status: 400 });
+      const prompt = `Comprehensive analysis of: "${query}"\n\nInclude: Overview, Current State (2025-2026), Key Players, Market Size, Technical Details, Strengths/Weaknesses, Alternatives, Opportunities for an AI web agency, Future Outlook.\n\nUse specific data, markdown formatting.`;
+      const result = await gemini(prompt, 4000);
+      return NextResponse.json({ query, analysis: result, timestamp: new Date().toISOString() });
+    }
 
-  return NextResponse.json({ error: "Unknown action" }, { status: 400 });
+    return NextResponse.json({ error: "Unknown action" }, { status: 400 });
+  } catch (e: any) {
+    return NextResponse.json({ error: "Server error: " + e.message }, { status: 500 });
+  }
 }
