@@ -114,7 +114,7 @@ export async function POST(req: NextRequest): Promise<any> {
           "X-Title": "Invictus MC Intel Engine",
         },
         body: JSON.stringify({
-          model: "nvidia/nemotron-3-nano-30b-a3b:free",
+          model: "google/gemma-3-27b-it:free",
           messages: [{ role: "user", content: prompt }],
           temperature: 0.7,
           max_tokens: 2000,

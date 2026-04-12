@@ -31,34 +31,48 @@ async function searchWeb(query: string): Promise<any[]> {
 }
 
 async function aiResearch(prompt: string): Promise<string> {
-  if (!OR_KEY) return "OpenRouter API key not configured.";
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30000);
-    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": "Bearer " + OR_KEY,
-        "Content-Type": "application/json",
-        "HTTP-Referer": "https://control.invictus-ai.in",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.0-flash-001",
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.5,
-        max_tokens: 3000,
-      }),
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
-    if (res.ok) {
-      const data = await res.json();
-      return data.choices?.[0]?.message?.content || "No response.";
-    }
-    return "API error: " + res.status;
-  } catch (e: any) {
-    return "Error: " + e.message;
+  if (!OR_KEY) return "API key not configured. Add credits at https://openrouter.ai/settings/keys";
+  
+  // Try multiple models in order of preference
+  const models = [
+    "google/gemma-3-27b-it:free",
+    "google/gemma-3-12b-it:free",
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "nousresearch/hermes-3-llama-3.1-405b:free",
+  ];
+  
+  for (const model of models) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000);
+      const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + OR_KEY,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "https://control.invictus-ai.in",
+        },
+        body: JSON.stringify({
+          model,
+          messages: [{ role: "user", content: prompt }],
+          temperature: 0.5,
+          max_tokens: 3000,
+        }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+      if (res.ok) {
+        const data = await res.json();
+        const content = data.choices?.[0]?.message?.content;
+        if (content) return content;
+      }
+      const err = await res.json().catch(() => ({}));
+      const code = (err as any)?.error?.code;
+      if (code === 403) return "API key limit reached ($4/$4 used). Add credits at https://openrouter.ai/settings/keys to enable Deep Dive and Search.";
+      if (code === 429) continue; // Try next model
+    } catch { continue; }
   }
+  return "All AI models are currently rate-limited. Try again in a few minutes, or add OpenRouter credits for guaranteed access.";
 }
 
 export async function POST(req: NextRequest): Promise<any> {
