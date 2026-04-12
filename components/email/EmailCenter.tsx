@@ -1011,7 +1011,7 @@ function WarmupTab() {
   const [sending, setSending] = useState(false);
   const [starting, setStarting] = useState(false);
   const [testTo, setTestTo] = useState("sahilbagul7641@gmail.com");
-  const [testFrom, setTestFrom] = useState("jordan@invictus-ai.in");
+  const [testFrom, setTestFrom] = useState("contact@invictus-ai.in");
   const [testSubject, setTestSubject] = useState("Test Email — Invictus AI Warmup");
   const [testBody, setTestBody] = useState("Hi! This is a test email sent from Invictus AI Mission Control to verify email deliverability.\n\nIf you receive this, our email system is working correctly.\n\nBest,\nInvictus AI");
   const [sendResult, setSendResult] = useState<{success: boolean; message: string} | null>(null);
@@ -1292,11 +1292,16 @@ function WarmupTab() {
                 <label className="text-xs text-zinc-500 mb-1 block">From</label>
                 <select value={testFrom} onChange={e => setTestFrom(e.target.value)}
                   className="w-full px-3 py-2 bg-surface-3 border border-white/5 rounded-lg text-sm text-zinc-200">
-                  <option value="jordan@invictus-ai.in">jordan@invictus-ai.in</option>
-                  <option value="hello@invictusai.site">hello@invictusai.site</option>
-                  <option value="hello@invictusai.online">hello@invictusai.online</option>
-                  <option value="hello@invictusai.tech">hello@invictusai.tech</option>
-                  <option value="team@invictus-ai.in">team@invictus-ai.in</option>
+                  <option value="contact@invictus-ai.in">contact@invictus-ai.in</option>
+                  <option value="contact@invictusai.site">contact@invictusai.site</option>
+                  <option value="contact@invictusai.online">contact@invictusai.online</option>
+                  <option value="contact@invictusai.tech">contact@invictusai.tech</option>
+                  <option value="support@invictusai.site">support@invictusai.site</option>
+                  <option value="support@invictusai.online">support@invictusai.online</option>
+                  <option value="support@invictusai.tech">support@invictusai.tech</option>
+                  <option value="info@invictusai.site">info@invictusai.site</option>
+                  <option value="info@invictusai.online">info@invictusai.online</option>
+                  <option value="info@invictusai.tech">info@invictusai.tech</option>
                 </select>
               </div>
               <div>

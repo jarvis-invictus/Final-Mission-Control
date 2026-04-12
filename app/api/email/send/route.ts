@@ -9,8 +9,27 @@ const SEND_LOG = DATA_DIR + "/email-send-log.json";
 // Postal SMTP config
 const SMTP_HOST = "172.26.0.14";
 const SMTP_PORT = 25;
-const SMTP_USER = "VeWPn1G8RqDRhtMoL42pKiD2";
-const SMTP_PASS = "VeWPn1G8RqDRhtMoL42pKiD2";
+
+// SMTP credentials per sender address
+const SMTP_CREDS: Record<string, { user: string; pass: string }> = {
+  // invictusai.site
+  "contact@invictusai.site":  { user: "RC4yC51uAUs951W6mQdLeZtq", pass: "RC4yC51uAUs951W6mQdLeZtq" },
+  "support@invictusai.site":  { user: "ndUMZFVpp1zHoWK0o12hQ2Pp", pass: "ndUMZFVpp1zHoWK0o12hQ2Pp" },
+  "info@invictusai.site":     { user: "0NqemACuSOtu7zaPTocoDrKs", pass: "0NqemACuSOtu7zaPTocoDrKs" },
+  // invictusai.online
+  "contact@invictusai.online": { user: "5G51zfT3IOUAIRU7BeJKdpb3", pass: "5G51zfT3IOUAIRU7BeJKdpb3" },
+  "support@invictusai.online": { user: "I9NyGftMQMiCGApTIKNiEBBQ", pass: "I9NyGftMQMiCGApTIKNiEBBQ" },
+  "info@invictusai.online":    { user: "30IsWoghi7WZJIt3i30qhddz", pass: "30IsWoghi7WZJIt3i30qhddz" },
+  // invictusai.tech
+  "contact@invictusai.tech":  { user: "ufjOOadwoJHpdMafmwJvTHvD", pass: "ufjOOadwoJHpdMafmwJvTHvD" },
+  "support@invictusai.tech":  { user: "3qIvkOJV17iKWds3eeiZxE6o", pass: "3qIvkOJV17iKWds3eeiZxE6o" },
+  "info@invictusai.tech":     { user: "dCPgpxr0h511Vrx1l8ApzMUZ", pass: "dCPgpxr0h511Vrx1l8ApzMUZ" },
+  // invictus-ai.in (main domain)
+  "contact@invictus-ai.in":   { user: "2F32gKZf3CmhxbaDf6gtdikX", pass: "2F32gKZf3CmhxbaDf6gtdikX" },
+};
+
+// Default credential for unknown senders
+const DEFAULT_CRED = { user: "VeWPn1G8RqDRhtMoL42pKiD2", pass: "VeWPn1G8RqDRhtMoL42pKiD2" };
 
 interface SendLogEntry {
   id: string;
@@ -46,6 +65,7 @@ function appendLog(entry: SendLogEntry): void {
 
 // Send email via raw SMTP using net socket (no nodemailer needed)
 async function sendViaSMTP(from: string, to: string, subject: string, body: string): Promise<{ success: boolean; error?: string }> {
+  const cred = SMTP_CREDS[from] || DEFAULT_CRED;
   return new Promise((resolve) => {
     const net = require("net");
     const client = new net.Socket();
@@ -95,8 +115,7 @@ async function sendViaSMTP(from: string, to: string, subject: string, body: stri
         client.write("EHLO invictus-ai.in\r\n");
       } else if (step === 1 && code === 250) {
         step = 2;
-        // Base64 encode credentials
-        const authStr = Buffer.from("\0" + SMTP_USER + "\0" + SMTP_PASS).toString("base64");
+        const authStr = Buffer.from("\0" + cred.user + "\0" + cred.pass).toString("base64");
         client.write("AUTH PLAIN " + authStr + "\r\n");
       } else if (step === 2 && code === 235) {
         step = 3;
@@ -131,11 +150,16 @@ async function sendViaSMTP(from: string, to: string, subject: string, body: stri
 
 // Available sender addresses
 const SENDERS: Record<string, string> = {
-  "jordan@invictus-ai.in": "Jordan | Invictus AI",
-  "hello@invictusai.site": "Invictus AI",
-  "hello@invictusai.online": "Invictus AI",
-  "hello@invictusai.tech": "Invictus AI",
-  "team@invictus-ai.in": "Invictus AI Team",
+  "contact@invictus-ai.in": "Invictus AI",
+  "contact@invictusai.site": "Invictus AI",
+  "contact@invictusai.online": "Invictus AI",
+  "contact@invictusai.tech": "Invictus AI",
+  "support@invictusai.site": "Invictus AI Support",
+  "support@invictusai.online": "Invictus AI Support",
+  "support@invictusai.tech": "Invictus AI Support",
+  "info@invictusai.site": "Invictus AI",
+  "info@invictusai.online": "Invictus AI",
+  "info@invictusai.tech": "Invictus AI",
 };
 
 export async function GET(): Promise<any> {
