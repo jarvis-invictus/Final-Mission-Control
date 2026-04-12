@@ -1,0 +1,116 @@
+{
+  "status": "idle",
+  "startedAt": null,
+  "pausedAt": null,
+  "targetEmails": [
+    "sahilbagul2003@gmail.com",
+    "sahilbagul7641@gmail.com",
+    "joyboy7641@gmail.com",
+    "movieskatta7641@gmail.com",
+    "devil26122003@gmail.com",
+    "morerakesh803@gmail.com",
+    "alexaunse@gmail.com",
+    "sahil.bagul@nmiet.edu.in",
+    "jarvis.invictus.ai@gmail.com",
+    "clinicops09@gmail.com"
+  ],
+  "senderDomains": [
+    "contact@invictus-ai.in",
+    "contact@invictusai.site",
+    "contact@invictusai.online",
+    "contact@invictusai.tech",
+    "support@invictusai.site",
+    "support@invictusai.online",
+    "support@invictusai.tech",
+    "info@invictusai.site",
+    "info@invictusai.online",
+    "info@invictusai.tech"
+  ],
+  "dailySchedule": [
+    {
+      "day": 1,
+      "limit": 2
+    },
+    {
+      "day": 2,
+      "limit": 3
+    },
+    {
+      "day": 3,
+      "limit": 5
+    },
+    {
+      "day": 4,
+      "limit": 5
+    },
+    {
+      "day": 5,
+      "limit": 8
+    },
+    {
+      "day": 6,
+      "limit": 8
+    },
+    {
+      "day": 7,
+      "limit": 10
+    },
+    {
+      "day": 8,
+      "limit": 12
+    },
+    {
+      "day": 9,
+      "limit": 15
+    },
+    {
+      "day": 10,
+      "limit": 15
+    },
+    {
+      "day": 11,
+      "limit": 18
+    },
+    {
+      "day": 12,
+      "limit": 20
+    },
+    {
+      "day": 13,
+      "limit": 20
+    },
+    {
+      "day": 14,
+      "limit": 25
+    },
+    {
+      "day": 15,
+      "limit": 30
+    },
+    {
+      "day": 16,
+      "limit": 30
+    },
+    {
+      "day": 17,
+      "limit": 35
+    },
+    {
+      "day": 18,
+      "limit": 40
+    },
+    {
+      "day": 19,
+      "limit": 40
+    },
+    {
+      "day": 20,
+      "limit": 45
+    },
+    {
+      "day": 21,
+      "limit": 50
+    }
+  ],
+  "notes": ""
+}

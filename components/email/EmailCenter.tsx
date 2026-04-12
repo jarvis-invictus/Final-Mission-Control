@@ -1012,8 +1012,22 @@ function WarmupTab() {
   const [starting, setStarting] = useState(false);
   const [testTo, setTestTo] = useState("sahilbagul7641@gmail.com");
   const [testFrom, setTestFrom] = useState("contact@invictus-ai.in");
-  const [testSubject, setTestSubject] = useState("Test Email — Invictus AI Warmup");
-  const [testBody, setTestBody] = useState("Hi! This is a test email sent from Invictus AI Mission Control to verify email deliverability.\n\nIf you receive this, our email system is working correctly.\n\nBest,\nInvictus AI");
+
+  // Natural business conversation templates — rotates randomly
+  const EMAIL_TEMPLATES = [
+    { subject: "Quick question about the project timeline", body: "Hi,\n\nThanks for sending over the project brief yesterday. I went through the requirements and I think we can have the first draft ready by Thursday.\n\nOne thing I wanted to clarify — should we prioritize the mobile layout or the desktop version first? Most of our recent projects have been mobile-first, but I want to make sure we're aligned.\n\nLet me know your thoughts.\n\nBest,\nSahil" },
+    { subject: "Following up on our discussion", body: "Hi,\n\nJust finished reviewing the competitor analysis you shared. Really interesting findings — especially the point about local SEO being underutilized in the dental space.\n\nI think we should discuss this in our next sync. Are you available tomorrow afternoon?\n\nCheers,\nSahil" },
+    { subject: "Re: next steps for the website project", body: "Hi,\n\nWanted to follow up on the client feedback from last week. I've made the adjustments to the design — new color scheme and updated service descriptions.\n\nCan you take a quick look and let me know if it's ready to share with the client?\n\nThanks,\nSahil" },
+    { subject: "Interesting article on digital marketing trends", body: "Hi,\n\nCame across this article about how small businesses are using AI for customer service. Some really practical insights — especially the part about WhatsApp automation for appointment booking.\n\nThought it might be relevant for what we're building. Let me know what you think.\n\nSahil" },
+    { subject: "Quick update on the Pune market research", body: "Hi,\n\nHope your week is going well. Just wanted to share a quick update — we finished the SEO audit for the Pune market and the results are pretty encouraging.\n\nI'll put together a summary and share it with the team by Friday.\n\nTalk soon,\nSahil" },
+    { subject: "Thoughts on the new client onboarding flow?", body: "Hi,\n\nI was going through our client onboarding process and had a few ideas to streamline it. Right now it takes about 3 days from signup to first deliverable — I think we can cut that to 48 hours.\n\nWould love to brainstorm on this when you have a moment.\n\nBest,\nSahil" },
+    { subject: "Re: meeting notes from today", body: "Hi,\n\nGood points raised in today's call. I've noted down the action items:\n\n1. Update the pricing page with the new packages\n2. Finalize the demo site for the CA niche\n3. Schedule follow-up with the Pune client\n\nLet me know if I missed anything.\n\nRegards,\nSahil" },
+    { subject: "Saw this and thought of our project", body: "Hi,\n\nJust saw a great case study about how a coaching institute in Bangalore grew their enrollment by 40% with a professional website and SEO. Their approach to content marketing was spot on.\n\nMight be worth looking at for our education vertical.\n\nSahil" },
+  ];
+
+  const randomTemplate = EMAIL_TEMPLATES[Math.floor(Math.random() * EMAIL_TEMPLATES.length)];
+  const [testSubject, setTestSubject] = useState(randomTemplate.subject);
+  const [testBody, setTestBody] = useState(randomTemplate.body);
   const [sendResult, setSendResult] = useState<{success: boolean; message: string} | null>(null);
   const [showTestForm, setShowTestForm] = useState(false);
   const [targetInput, setTargetInput] = useState("");
@@ -1271,15 +1285,15 @@ function WarmupTab() {
         </div>
       </div>
 
-      {/* Send Test Email Card */}
+      {/* Send Email Card */}
       <div className="bg-surface-2 rounded-xl border border-white/5 overflow-hidden">
         <button onClick={() => setShowTestForm(!showTestForm)}
           className="w-full flex items-center justify-between px-6 py-4 hover:bg-surface-3/50 transition-colors">
           <div className="flex items-center gap-3">
             <Send className="w-5 h-5 text-brand-400" />
             <div className="text-left">
-              <h3 className="text-sm font-semibold text-white">Send Test Email</h3>
-              <p className="text-xs text-zinc-500">Verify deliverability — send a real email now</p>
+              <h3 className="text-sm font-semibold text-white">Send Email</h3>
+              <p className="text-xs text-zinc-500">Compose and send a real email</p>
             </div>
           </div>
           <ChevronDown className={clsx("w-4 h-4 text-zinc-500 transition-transform", showTestForm && "rotate-180")} />
@@ -1324,7 +1338,7 @@ function WarmupTab() {
             <button onClick={handleSendTest} disabled={sending || !testTo}
               className="flex items-center gap-2 px-5 py-2.5 bg-brand-400 hover:bg-brand-300 text-black font-bold text-sm rounded-xl transition-all active:scale-95 disabled:opacity-50">
               {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              {sending ? "Sending..." : "Send Test Email"}
+              {sending ? "Sending..." : "Send Email"}
             </button>
           </div>
         )}
@@ -1432,7 +1446,7 @@ function WarmupTab() {
                   </tr>
                 ))}
                 {(!data.recentLog || data.recentLog.length === 0) && (
-                  <tr><td colSpan={6} className="py-8 text-center text-zinc-600 text-sm">No emails sent yet. Use "Send Test Email" to start.</td></tr>
+                  <tr><td colSpan={6} className="py-8 text-center text-zinc-600 text-sm">No emails sent yet. Use "Send Email" to start.</td></tr>
                 )}
               </tbody>
             </table>
@@ -1472,7 +1486,7 @@ function WarmupTab() {
             <div className="text-sm font-medium text-red-400">Warmup Not Started</div>
             <p className="text-xs text-zinc-500 mt-1">
               Click "Start Warmup" to begin the 21-day domain reputation building process.
-              Send test emails first to verify deliverability.
+              Click "Start Warmup" to begin the 21-day domain reputation building process.
             </p>
           </div>
         </div>
