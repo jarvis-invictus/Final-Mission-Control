@@ -1,190 +1,119 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readdirSync, readFileSync, existsSync, writeFileSync } from "fs";
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
 import { join } from "path";
-import { execSync } from "child_process";
 
-const CUSTOM_EVENTS_FILE = join(process.cwd(), "data", "calendar-events.json");
+export const dynamic = "force-dynamic";
 
-function loadCustomEvents(): CalendarEvent[] {
-  try {
-    if (existsSync(CUSTOM_EVENTS_FILE)) {
-      return JSON.parse(readFileSync(CUSTOM_EVENTS_FILE, "utf-8"));
-    }
-  } catch {}
-  return [];
-}
-
-function saveCustomEvents(evts: CalendarEvent[]) {
-  writeFileSync(CUSTOM_EVENTS_FILE, JSON.stringify(evts, null, 2));
-}
+const DATA_DIR = "/app/data";
+const EVENTS_FILE = DATA_DIR + "/calendar-events.json";
 
 const GHL_KEY = process.env.GHL_API_KEY || "pit-b67e8052-7423-4cc9-abbe-3a5cd5b89df8";
 const GHL_LOC = process.env.GHL_LOCATION_ID || "AVBEYuMBQNnuxogWO6YQ";
 
-export const dynamic = "force-dynamic";
-
 interface CalendarEvent {
   id: string;
   title: string;
-  date: string;          // ISO date
-  time?: string;         // HH:MM
+  date: string;
+  time?: string;
   endTime?: string;
-  type: "meeting" | "task" | "content" | "reminder";
+  type: "meeting" | "task" | "deadline" | "reminder" | "content";
   priority?: "P0" | "P1" | "P2" | "P3";
   assignee?: string;
-  status?: "scheduled" | "done" | "cancelled" | "draft" | "published";
+  status?: "scheduled" | "done" | "cancelled";
   description?: string;
-  platform?: string;     // for content: linkedin, blog, twitter
-  client?: string;       // for meetings: client name
-  niche?: string;
+  source?: "manual" | "ghl" | "system";
+  client?: string;
 }
 
-function getAgentTasks(): CalendarEvent[] {
-  const events: CalendarEvent[] = [];
-  const now = new Date();
-
-  // Parse HEARTBEAT.md for current priorities
+function loadEvents(): CalendarEvent[] {
   try {
-    const hb = readFileSync("/workspace/agents/elon/HEARTBEAT.md", "utf-8");
-    if (hb.includes("Niche Selection")) {
-      events.push({
-        id: "hb-niche",
-        title: "Decide 2-3 Focus Niches",
-        date: now.toISOString().split("T")[0],
-        type: "task",
-        priority: "P0",
-        assignee: "Sahil",
-        status: "scheduled",
-        description: "All vertical-building and outreach stalled until niches selected",
-      });
-    }
-    if (hb.includes("pricing") || hb.includes("Pricing")) {
-      events.push({
-        id: "hb-pricing",
-        title: "Define Pricing & Offer",
-        date: now.toISOString().split("T")[0],
-        type: "task",
-        priority: "P0",
-        assignee: "Sahil",
-        status: "scheduled",
-        description: "Sales can't close without pricing tiers",
-      });
-    }
+    if (existsSync(EVENTS_FILE)) return JSON.parse(readFileSync(EVENTS_FILE, "utf-8"));
   } catch {}
 
-  // Parse memory files for recent tasks
-  const memDir = "/workspace/agents/elon/memory";
+  // Seed with meaningful events
+  const today = new Date().toISOString().slice(0, 10);
+  const seed: CalendarEvent[] = [
+    {
+      id: "sys-warmup-start",
+      title: "Email Domain Warmup Started",
+      date: "2026-04-12",
+      time: "15:18",
+      type: "task",
+      priority: "P1",
+      assignee: "Elon",
+      status: "done",
+      description: "21-day warmup across 3 outreach domains (invictusai.site, .online, .tech)",
+      source: "system",
+    },
+    {
+      id: "sys-warmup-end",
+      title: "Domain Warmup Complete (Target)",
+      date: "2026-05-03",
+      type: "deadline",
+      priority: "P0",
+      assignee: "Elon",
+      status: "scheduled",
+      description: "All 3 outreach domains should be fully warmed. Ready for cold outreach.",
+      source: "system",
+    },
+    {
+      id: "sys-outreach-start",
+      title: "Cold Outreach Campaign Launch",
+      date: "2026-05-05",
+      type: "deadline",
+      priority: "P0",
+      assignee: "Jordan",
+      status: "scheduled",
+      description: "Begin sending cold emails to dental prospects. 50-100/day capacity.",
+      source: "system",
+    },
+  ];
+  saveEvents(seed);
+  return seed;
+}
+
+function saveEvents(events: CalendarEvent[]): void {
   try {
-    if (existsSync(memDir)) {
-      const files = readdirSync(memDir).filter(f => f.startsWith("2026-04") && f.endsWith(".md")).sort().reverse().slice(0, 3);
-      for (const file of files) {
-        const content = readFileSync(join(memDir, file), "utf-8");
-        const dateMatch = file.match(/(\d{4}-\d{2}-\d{2})/);
-        const date = dateMatch ? dateMatch[1] : now.toISOString().split("T")[0];
-
-        // Extract time-stamped entries
-        const timeEntries = content.matchAll(/##\s+(\d{1,2}:\d{2}\s*(?:AM|PM|IST)?)\s*—?\s*(.+)/gi);
-        for (const match of timeEntries) {
-          events.push({
-            id: `mem-${file}-${match[1]}`,
-            title: match[2].replace(/[✅🔧🏆💡⚠️]/g, "").trim().slice(0, 80),
-            date,
-            time: match[1].replace(/\s*IST/i, "").trim(),
-            type: "task",
-            status: match[2].includes("✅") ? "done" : "scheduled",
-            assignee: "Elon",
-          });
-        }
-      }
-    }
+    if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
+    writeFileSync(EVENTS_FILE, JSON.stringify(events, null, 2));
   } catch {}
-
-  // Add MC rebuild as ongoing task
-  events.push({
-    id: "mc-rebuild",
-    title: "Mission Control V4/V5 Rebuild",
-    date: now.toISOString().split("T")[0],
-    type: "task",
-    priority: "P1",
-    assignee: "Elon",
-    status: "scheduled",
-    description: "Calendar, doc viewer, demo gallery, GitHub integration",
-  });
-
-  // Add domain warmup as upcoming task
-  events.push({
-    id: "domain-warmup",
-    title: "Domain Warmup Plan",
-    date: new Date(now.getTime() + 7 * 86400000).toISOString().split("T")[0],
-    type: "task",
-    priority: "P2",
-    assignee: "Jordan",
-    status: "scheduled",
-    description: "invictus-ai.in needs warming before cold email campaign",
-  });
-
-  return events;
 }
 
-function getContentCalendar(): CalendarEvent[] {
-  // Content events from gary's workspace
-  const events: CalendarEvent[] = [];
-  const now = new Date();
-
-  events.push({
-    id: "content-linkedin-1",
-    title: "LinkedIn: Company Launch Post",
-    date: now.toISOString().split("T")[0],
-    type: "content",
-    platform: "linkedin",
-    assignee: "Gary",
-    status: "draft",
-    description: "Announce Invictus AI — AI-powered business solutions for SMBs",
-  });
-
-  events.push({
-    id: "content-linkedin-2",
-    title: "LinkedIn: Dental AI Case Study",
-    date: new Date(now.getTime() + 3 * 86400000).toISOString().split("T")[0],
-    type: "content",
-    platform: "linkedin",
-    assignee: "Gary",
-    status: "draft",
-    description: "How AI chatbot increased dental clinic bookings by 40%",
-  });
-
-  return events;
-}
-
-async function getGHLAppointments(): Promise<CalendarEvent[]> {
+async function fetchGHLAppointments(): Promise<CalendarEvent[]> {
   const events: CalendarEvent[] = [];
   try {
     const now = new Date();
     const startTime = new Date(now.getTime() - 30 * 86400000).toISOString();
     const endTime = new Date(now.getTime() + 60 * 86400000).toISOString();
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
     const res = await fetch(
-      `https://services.leadconnectorhq.com/calendars/events?locationId=${GHL_LOC}&startTime=${startTime}&endTime=${endTime}`,
+      "https://services.leadconnectorhq.com/calendars/events?locationId=" + GHL_LOC + "&startTime=" + startTime + "&endTime=" + endTime,
       {
         headers: {
-          Authorization: `Bearer ${GHL_KEY}`,
+          Authorization: "Bearer " + GHL_KEY,
           Version: "2021-07-28",
           Accept: "application/json",
         },
+        signal: controller.signal,
       }
     );
+    clearTimeout(timeout);
     if (res.ok) {
       const data = await res.json();
       for (const e of (data.events || [])) {
+        const start = e.startTime ? new Date(e.startTime) : now;
         events.push({
-          id: `ghl-${e.id}`,
+          id: "ghl-" + e.id,
           title: e.title || e.name || "GHL Appointment",
-          date: e.startTime ? new Date(e.startTime).toISOString().split("T")[0] : now.toISOString().split("T")[0],
-          time: e.startTime ? new Date(e.startTime).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }) : undefined,
+          date: start.toISOString().slice(0, 10),
+          time: start.toTimeString().slice(0, 5),
           type: "meeting",
-          status: e.appointmentStatus === "confirmed" ? "scheduled" : e.appointmentStatus === "cancelled" ? "cancelled" : "scheduled",
-          assignee: "GHL",
+          status: e.appointmentStatus === "cancelled" ? "cancelled" : "scheduled",
+          assignee: "Sahil",
           client: e.contact?.name || e.title,
-          description: `Go High Level appointment · ${e.appointmentStatus || "pending"}`,
+          description: "Go High Level appointment",
+          source: "ghl",
         });
       }
     }
@@ -192,74 +121,75 @@ async function getGHLAppointments(): Promise<CalendarEvent[]> {
   return events;
 }
 
-export async function GET() {
-  const events: CalendarEvent[] = [];
-
-  // Gather all events
-  events.push(...getAgentTasks());
-  events.push(...getContentCalendar());
-  
-  // GHL appointments
-  const ghlAppts = await getGHLAppointments();
-  events.push(...ghlAppts);
-
-  // Custom user-created events
-  events.push(...loadCustomEvents());
+export async function GET(): Promise<any> {
+  // Load local events + GHL appointments
+  const localEvents = loadEvents();
+  const ghlEvents = await fetchGHLAppointments();
+  const allEvents = [...localEvents, ...ghlEvents];
 
   // Sort by date
-  events.sort((a, b) => a.date.localeCompare(b.date));
+  allEvents.sort((a, b) => a.date.localeCompare(b.date));
 
-  // Group by date
-  const byDate: Record<string, CalendarEvent[]> = {};
-  for (const e of events) {
-    if (!byDate[e.date]) byDate[e.date] = [];
-    byDate[e.date].push(e);
-  }
-
-  // Summary
+  const today = new Date().toISOString().slice(0, 10);
   const summary = {
-    total: events.length,
-    meetings: events.filter(e => e.type === "meeting").length,
-    tasks: events.filter(e => e.type === "task").length,
-    content: events.filter(e => e.type === "content").length,
-    reminders: events.filter(e => e.type === "reminder").length,
-    overdue: events.filter(e => e.date < new Date().toISOString().split("T")[0] && e.status !== "done").length,
+    total: allEvents.length,
+    upcoming: allEvents.filter(e => e.date >= today && e.status !== "cancelled" && e.status !== "done").length,
+    overdue: allEvents.filter(e => e.date < today && e.status === "scheduled").length,
+    ghl: ghlEvents.length,
   };
 
-  return NextResponse.json({ events, byDate, summary, timestamp: new Date().toISOString() }, {
-    headers: { "Cache-Control": "public, max-age=30" },
-  });
+  return NextResponse.json({ events: allEvents, summary });
 }
 
-export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json();
-    const { title, date, time, type, priority, assignee, description, platform, client } = body;
+export async function POST(req: NextRequest): Promise<any> {
+  const body = await req.json();
+  const { action } = body;
 
-    if (!title || !date || !type) {
-      return NextResponse.json({ error: "title, date, and type are required" }, { status: 400 });
-    }
-
+  if (action === "create") {
     const event: CalendarEvent = {
-      id: `custom-${Date.now()}`,
-      title,
-      date,
-      time: time || undefined,
-      type,
-      priority: priority || undefined,
-      assignee: assignee || "Sahil",
+      id: "evt-" + Date.now(),
+      title: body.title || "Untitled Event",
+      date: body.date || new Date().toISOString().slice(0, 10),
+      time: body.time,
+      endTime: body.endTime,
+      type: body.type || "task",
+      priority: body.priority,
+      assignee: body.assignee || "Sahil",
       status: "scheduled",
-      description: description || undefined,
-      platform: platform || undefined,
-      client: client || undefined,
+      description: body.description,
+      source: "manual",
+      client: body.client,
     };
-
-    const events = loadCustomEvents();
+    const events = loadEvents();
     events.push(event);
-    saveCustomEvents(events);
-
+    saveEvents(events);
     return NextResponse.json({ event, total: events.length });
-  } catch (err) {
-    return NextResponse.json({ error: "Failed to create event" }, { status: 500 });
   }
+
+  if (action === "update") {
+    const events = loadEvents();
+    const idx = events.findIndex(e => e.id === body.id);
+    if (idx === -1) return NextResponse.json({ error: "Event not found" }, { status: 404 });
+    events[idx] = { ...events[idx], ...body, id: events[idx].id, source: events[idx].source };
+    saveEvents(events);
+    return NextResponse.json({ event: events[idx] });
+  }
+
+  if (action === "delete") {
+    const events = loadEvents();
+    const filtered = events.filter(e => e.id !== body.id);
+    saveEvents(filtered);
+    return NextResponse.json({ deleted: body.id, remaining: filtered.length });
+  }
+
+  if (action === "markDone") {
+    const events = loadEvents();
+    const idx = events.findIndex(e => e.id === body.id);
+    if (idx === -1) return NextResponse.json({ error: "Event not found" }, { status: 404 });
+    events[idx].status = "done";
+    saveEvents(events);
+    return NextResponse.json({ event: events[idx] });
+  }
+
+  return NextResponse.json({ error: "Unknown action. Use: create, update, delete, markDone" }, { status: 400 });
 }

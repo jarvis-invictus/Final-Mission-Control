@@ -48,7 +48,18 @@ export default function CalendarView() {
     try {
       const r = await fetch("/api/calendar");
       const d = await r.json();
-      setEvents(d.events || []);
+      // Transform API events (date+time) to CalEvent format (start+end)
+      const mapped = (d.events || []).map((e: any) => ({
+        id: e.id,
+        title: e.title,
+        start: e.time ? e.date + "T" + e.time + ":00" : e.date,
+        end: e.endTime ? e.date + "T" + e.endTime + ":00" : (e.time ? e.date + "T" + (parseInt(e.time.split(":")[0]) + 1).toString().padStart(2, "0") + ":" + e.time.split(":")[1] + ":00" : e.date),
+        type: e.type || "task",
+        description: e.description || "",
+        assignee: e.assignee || "",
+        location: e.client || "",
+      }));
+      setEvents(mapped);
     } catch {} finally { setLoading(false); }
   }, []);
 

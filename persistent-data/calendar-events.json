@@ -1,0 +1,36 @@
+[
+  {
+    "id": "sys-warmup-start",
+    "title": "Email Domain Warmup Started",
+    "date": "2026-04-12",
+    "time": "15:18",
+    "type": "task",
+    "priority": "P1",
+    "assignee": "Elon",
+    "status": "done",
+    "description": "21-day warmup across 3 outreach domains (invictusai.site, .online, .tech)",
+    "source": "system"
+  },
+  {
+    "id": "sys-warmup-end",
+    "title": "Domain Warmup Complete (Target)",
+    "date": "2026-05-03",
+    "type": "deadline",
+    "priority": "P0",
+    "assignee": "Elon",
+    "status": "scheduled",
+    "description": "All 3 outreach domains should be fully warmed. Ready for cold outreach.",
+    "source": "system"
+  },
+  {
+    "id": "sys-outreach-start",
+    "title": "Cold Outreach Campaign Launch",
+    "date": "2026-05-05",
+    "type": "deadline",
+    "priority": "P0",
+    "assignee": "Jordan",
+    "status": "scheduled",
+    "description": "Begin sending cold emails to dental prospects. 50-100/day capacity.",
+    "source": "system"
+  }
+]
