@@ -5,6 +5,11 @@ import { exec } from 'child_process';
 export const maxDuration = 30;
 export const dynamic = 'force-dynamic';
 
+// In-memory cache (30s TTL)
+let cachedData: any = null;
+let cacheTime = 0;
+const CACHE_TTL = 30000;
+
 async function run(cmd: string, timeoutMs = 15000): Promise<string> {
   return new Promise((resolve) => {
     exec(cmd, { timeout: timeoutMs, maxBuffer: 1024 * 1024 }, (err, stdout, stderr) => {
@@ -38,6 +43,10 @@ function parseImageLine(line: string) {
 }
 
 export async function GET() {
+  // Return cached data if fresh
+  if (cachedData && Date.now() - cacheTime < CACHE_TTL) {
+    return NextResponse.json(cachedData);
+  }
   try {
     // Run all commands in parallel for speed
     const [ramSwap, dockerStatsRaw, dockerImagesRaw, dockerSystemRaw, loadInfo, uptimeInfo, dfOut] = await Promise.all([
@@ -125,7 +134,7 @@ export async function GET() {
       '15min': parseFloat(loadParts[2]) || 0,
     };
 
-    return NextResponse.json({
+    const result = {
       disk,
       ram,
       swap,
@@ -149,7 +158,10 @@ export async function GET() {
       cpu_count: cpuCount,
       uptime: uptimeInfo,
       timestamp: new Date().toISOString(),
-    });
+    };
+    cachedData = result;
+    cacheTime = Date.now();
+    return NextResponse.json(result);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

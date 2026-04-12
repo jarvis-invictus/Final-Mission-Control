@@ -1,3 +1,6 @@
+import type { Metadata } from 'next';
+export const metadata: Metadata = { title: 'Blockers | Invictus MC' };
+
 import Sidebar from "@/components/dashboard/Sidebar";
 import BlockerTracker from "@/components/blockers/BlockerTracker";
 

@@ -1,3 +1,6 @@
+import type { Metadata } from 'next';
+export const metadata: Metadata = { title: 'Intel | Invictus MC' };
+
 import IntelView from "@/components/intel/IntelView";
 import Sidebar from "@/components/dashboard/Sidebar";
 

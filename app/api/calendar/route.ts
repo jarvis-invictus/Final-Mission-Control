@@ -3,7 +3,7 @@ import { readdirSync, readFileSync, existsSync, writeFileSync } from "fs";
 import { join } from "path";
 import { execSync } from "child_process";
 
-const CUSTOM_EVENTS_FILE = "/tmp/mc-calendar-events.json";
+const CUSTOM_EVENTS_FILE = join(process.cwd(), "data", "calendar-events.json");
 
 function loadCustomEvents(): CalendarEvent[] {
   try {

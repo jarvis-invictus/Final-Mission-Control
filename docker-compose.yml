@@ -12,6 +12,16 @@ services:
       - DOCS_PATH=/workspace/docs
       - AGENTS_WORKSPACE_ROOT=/workspace/agents
       - GITHUB_PAT=${GITHUB_PAT}
+      - GITHUB_PAT_SAHIL=${GITHUB_PAT_SAHIL}
+      - VERCEL_TOKEN_JARVIS=${VERCEL_TOKEN_JARVIS}
+      - VERCEL_TOKEN_JOYBOY=${VERCEL_TOKEN_JOYBOY}
+      - GHL_API_KEY=${GHL_API_KEY}
+      - GHL_LOCATION_ID=${GHL_LOCATION_ID}
+      - GAMERON_API_KEY=${GAMERON_API_KEY}
+      - N8N_API_URL=${N8N_API_URL}
+      - N8N_API_KEY=${N8N_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
     volumes:
       # Shared docs
       - /opt/invictus-workspace/docs:/workspace/docs:ro
@@ -24,6 +34,8 @@ services:
       - /docker/openclaw-v1yl/data/.openclaw/workspace:/workspace/agents/jarvis
       # Docker socket for system audit
       - /var/run/docker.sock:/var/run/docker.sock
+      # Persistent app data (intel, calendar, fulfillment survive restarts)
+      - /docker/invictus-mc/persistent-data:/app/data
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.mission-control.rule=Host(`control.invictus-ai.in`)"

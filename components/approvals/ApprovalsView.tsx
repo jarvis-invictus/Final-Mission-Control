@@ -15,13 +15,16 @@ import { clsx } from "clsx";
 /* ================================================================ */
 
 type ApprovalStatus = "pending" | "approved" | "rejected" | "changes_requested";
-type ApprovalType = "content" | "outreach" | "feature" | "budget" | "strategy" | "other";
+type ApprovalType = "content" | "outreach" | "feature" | "budget" | "strategy" | "access" | "asset" | "other";
 
 interface Approval {
   id: string; title: string; description: string; type: ApprovalType;
   submittedBy: string; submittedAt: string;
   status: ApprovalStatus; reviewedAt?: string; reviewNote?: string;
   priority: "high" | "medium" | "low"; linkedTo?: string;
+  expectedROI?: string; businessImpact?: "critical" | "high" | "medium" | "low";
+  estimatedCost?: string; timeToValue?: string;
+  whatTheyNeed?: string; whyBlocked?: string;
 }
 
 /* ================================================================ */
@@ -41,6 +44,8 @@ const TYPE_CONFIG: Record<ApprovalType, { icon: typeof FileText; label: string; 
   feature:  { icon: Settings, label: "Feature", color: "text-amber-400" },
   budget:   { icon: DollarSign, label: "Budget", color: "text-red-400" },
   strategy: { icon: Target, label: "Strategy", color: "text-brand-400" },
+  access:   { icon: Settings, label: "Access", color: "text-cyan-400" },
+  asset:    { icon: Package, label: "Asset", color: "text-violet-400" },
   other:    { icon: Package, label: "Other", color: "text-zinc-400" },
 };
 
@@ -92,7 +97,7 @@ export default function ApprovalsView() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   const [reviewNote, setReviewNote] = useState("");
-  const [form, setForm] = useState({ title: "", description: "", type: "feature" as ApprovalType, submittedBy: "Elon", priority: "medium" as "high" | "medium" | "low" });
+  const [form, setForm] = useState({ title: "", description: "", type: "feature" as ApprovalType, submittedBy: "Elon", priority: "medium" as "high" | "medium" | "low", expectedROI: "", businessImpact: "medium" as "critical" | "high" | "medium" | "low", estimatedCost: "", whatTheyNeed: "", whyBlocked: "" });
 
   const load = useCallback(async () => {
     try {
@@ -140,7 +145,7 @@ export default function ApprovalsView() {
         body: JSON.stringify({ action: "create", ...form }),
       });
       setShowCreate(false);
-      setForm({ title: "", description: "", type: "feature", submittedBy: "Elon", priority: "medium" });
+      setForm({ title: "", description: "", type: "feature", submittedBy: "Elon", priority: "medium", expectedROI: "", businessImpact: "medium", estimatedCost: "", whatTheyNeed: "", whyBlocked: "" });
       await load();
     } catch {} finally { setActionLoading(null); }
   };
@@ -269,6 +274,27 @@ export default function ApprovalsView() {
                     <div className="flex-1 min-w-0">
                       <h3 className="text-lg font-bold text-white mb-1">{approval.title}</h3>
                       <p className="text-sm text-zinc-400 leading-relaxed mb-4">{approval.description}</p>
+
+                      {/* ROI & Impact info */}
+                      {(approval.whatTheyNeed || approval.expectedROI || approval.businessImpact) && (
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4 p-3 bg-surface-2 rounded-lg border border-white/5">
+                          {approval.whatTheyNeed && (
+                            <div><p className="text-[10px] text-zinc-600 uppercase">Need</p><p className="text-xs text-zinc-300">{approval.whatTheyNeed}</p></div>
+                          )}
+                          {approval.whyBlocked && (
+                            <div><p className="text-[10px] text-zinc-600 uppercase">Blocked By</p><p className="text-xs text-red-400">{approval.whyBlocked}</p></div>
+                          )}
+                          {approval.expectedROI && (
+                            <div><p className="text-[10px] text-zinc-600 uppercase">Expected ROI</p><p className="text-xs text-emerald-400">{approval.expectedROI}</p></div>
+                          )}
+                          {approval.estimatedCost && (
+                            <div><p className="text-[10px] text-zinc-600 uppercase">Cost</p><p className="text-xs text-amber-400">{approval.estimatedCost}</p></div>
+                          )}
+                          {approval.businessImpact && (
+                            <div><p className="text-[10px] text-zinc-600 uppercase">Impact</p><p className={clsx("text-xs", approval.businessImpact === "critical" ? "text-red-400" : approval.businessImpact === "high" ? "text-amber-400" : "text-zinc-400")}>{approval.businessImpact}</p></div>
+                          )}
+                        </div>
+                      )}
 
                       {/* Meta Tags */}
                       <div className="flex items-center gap-3 flex-wrap">
@@ -422,6 +448,43 @@ export default function ApprovalsView() {
                     <option value="Jarvis">🏛️ Jarvis</option>
                     <option value="Friend">👋 Friend</option>
                   </select>
+                </div>
+              </div>
+
+              {/* ROI & Business Impact Fields */}
+              <div className="mt-4 p-4 bg-surface-2 rounded-xl border border-white/5">
+                <p className="text-xs font-semibold text-brand-400 mb-3 uppercase tracking-wider">💰 ROI & Business Impact</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-zinc-500 mb-1 block">What They Need</label>
+                    <input value={form.whatTheyNeed} onChange={e => setForm(f => ({ ...f, whatTheyNeed: e.target.value }))}
+                      placeholder="API key, email access, budget..." className="w-full px-3 py-2 bg-surface-3 border border-surface-5 rounded-lg text-sm text-zinc-200 focus:outline-none focus:border-brand-400/30" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-zinc-500 mb-1 block">Why Blocked</label>
+                    <input value={form.whyBlocked} onChange={e => setForm(f => ({ ...f, whyBlocked: e.target.value }))}
+                      placeholder="Can't send emails without..." className="w-full px-3 py-2 bg-surface-3 border border-surface-5 rounded-lg text-sm text-zinc-200 focus:outline-none focus:border-brand-400/30" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-zinc-500 mb-1 block">Expected ROI</label>
+                    <input value={form.expectedROI} onChange={e => setForm(f => ({ ...f, expectedROI: e.target.value }))}
+                      placeholder="₹50K revenue/month..." className="w-full px-3 py-2 bg-surface-3 border border-surface-5 rounded-lg text-sm text-zinc-200 focus:outline-none focus:border-brand-400/30" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-zinc-500 mb-1 block">Estimated Cost</label>
+                    <input value={form.estimatedCost} onChange={e => setForm(f => ({ ...f, estimatedCost: e.target.value }))}
+                      placeholder="₹0 / ₹5K one-time..." className="w-full px-3 py-2 bg-surface-3 border border-surface-5 rounded-lg text-sm text-zinc-200 focus:outline-none focus:border-brand-400/30" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-zinc-500 mb-1 block">Business Impact</label>
+                    <select value={form.businessImpact} onChange={e => setForm(f => ({ ...f, businessImpact: e.target.value as any }))}
+                      className="w-full px-3 py-2 bg-surface-3 border border-surface-5 rounded-lg text-sm text-zinc-200">
+                      <option value="critical">🔴 Critical — Revenue blocked</option>
+                      <option value="high">🟠 High — Significant impact</option>
+                      <option value="medium">🟡 Medium — Helpful</option>
+                      <option value="low">⚪ Low — Nice to have</option>
+                    </select>
+                  </div>
                 </div>
               </div>
             </div>

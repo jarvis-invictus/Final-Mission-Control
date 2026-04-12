@@ -1,3 +1,6 @@
+import type { Metadata } from 'next';
+export const metadata: Metadata = { title: 'Docs | Invictus MC' };
+
 import Sidebar from '@/components/dashboard/Sidebar';
 import DocumentHub from '@/components/docs/DocumentHub';
 

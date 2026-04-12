@@ -1,3 +1,6 @@
+import type { Metadata } from 'next';
+export const metadata: Metadata = { title: 'CRM | Invictus MC' };
+
 import Sidebar from '@/components/dashboard/Sidebar';
 import CRMPipeline from '@/components/crm/CRMPipeline';
 

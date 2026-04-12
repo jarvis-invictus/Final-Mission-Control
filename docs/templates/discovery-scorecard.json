@@ -1,0 +1,105 @@
+{
+  "scorecardName": "Discovery Call Lead Scorecard",
+  "version": "1.0",
+  "scoring": {
+    "maxScore": 50,
+    "categories": [
+      {
+        "name": "Online Presence",
+        "maxPoints": 10,
+        "criteria": [
+          {"score": 0, "description": "No website, no GMB, no social media"},
+          {"score": 2, "description": "Has basic website but outdated (2+ years)"},
+          {"score": 4, "description": "Has website OR GMB, not both"},
+          {"score": 6, "description": "Has website + GMB but not optimized"},
+          {"score": 8, "description": "Has website + GMB + some social, needs improvement"},
+          {"score": 10, "description": "Strong online presence — may not need us"}
+        ],
+        "notes": "Score 2-6 is our sweet spot. 0 = lots of work. 8-10 = may be harder to sell but higher budget."
+      },
+      {
+        "name": "Urgency",
+        "maxPoints": 10,
+        "criteria": [
+          {"score": 2, "description": "Just exploring, no timeline"},
+          {"score": 4, "description": "Thinking about it, maybe next quarter"},
+          {"score": 6, "description": "Want to start within a month"},
+          {"score": 8, "description": "Need it within 2 weeks"},
+          {"score": 10, "description": "Critical — losing business now, need it yesterday"}
+        ]
+      },
+      {
+        "name": "Budget Fit",
+        "maxPoints": 10,
+        "criteria": [
+          {"score": 2, "description": "Very price-sensitive, wants cheapest option"},
+          {"score": 4, "description": "Has limited budget, may fit Starter only"},
+          {"score": 6, "description": "Can afford Growth tier, value-conscious"},
+          {"score": 8, "description": "Budget aligned with Growth/Scale, sees ROI"},
+          {"score": 10, "description": "Money is not the issue, wants the best solution"}
+        ]
+      },
+      {
+        "name": "Decision Authority",
+        "maxPoints": 10,
+        "criteria": [
+          {"score": 2, "description": "Needs committee/board approval"},
+          {"score": 4, "description": "Needs partner/spouse approval"},
+          {"score": 6, "description": "Has influence but needs one other sign-off"},
+          {"score": 8, "description": "Primary decision maker, just being thorough"},
+          {"score": 10, "description": "Sole decision maker, can say yes today"}
+        ]
+      },
+      {
+        "name": "Business Potential",
+        "maxPoints": 10,
+        "criteria": [
+          {"score": 2, "description": "Very small operation, low customer volume"},
+          {"score": 4, "description": "Small but stable, some growth potential"},
+          {"score": 6, "description": "Established business, clear growth opportunity"},
+          {"score": 8, "description": "Growing business, multiple locations or expanding"},
+          {"score": 10, "description": "High-value business, multi-location, strong LTV"}
+        ]
+      }
+    ],
+    "tierRecommendation": {
+      "0-15": {"tier": "Pass", "action": "Add to nurture drip — not ready yet"},
+      "16-25": {"tier": "Starter", "action": "Present Starter tier, plant seeds for upgrade"},
+      "26-35": {"tier": "Growth", "action": "Present Growth tier with ROI justification"},
+      "36-50": {"tier": "Scale", "action": "Present Scale tier — high-value prospect, close fast"}
+    },
+    "heatLevel": {
+      "0-15": "🥶 Cold — nurture",
+      "16-25": "🌤️ Warm — follow up within 48h",
+      "26-35": "🔥 Hot — follow up same day",
+      "36-50": "🔥🔥🔥 On Fire — close within 24h"
+    }
+  },
+  "postCallActions": {
+    "0-15": [
+      "Add to email nurture sequence",
+      "Set 30-day follow-up reminder",
+      "Send educational content (case studies, guides)"
+    ],
+    "16-25": [
+      "Send Starter tier proposal within 24h",
+      "Include 1 relevant case study",
+      "Set Day 2 + Day 5 follow-up",
+      "Add to weekly check-in list"
+    ],
+    "26-35": [
+      "Send Growth tier proposal within 4 hours",
+      "Include ROI calculation specific to their business",
+      "Include 2 niche-specific case studies",
+      "Schedule follow-up call for next day",
+      "Have agreement ready to send"
+    ],
+    "36-50": [
+      "Send Scale tier proposal immediately (within 1 hour)",
+      "Call back same day to close",
+      "Have agreement + payment link ready",
+      "Offer launch discount to close today",
+      "Assign dedicated account manager"
+    ]
+  }
+}

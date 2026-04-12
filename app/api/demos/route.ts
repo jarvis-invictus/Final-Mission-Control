@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import { execSync } from "child_process";
 
 export const dynamic = "force-dynamic";
 
-const DEMO_BASE_URL = "https://demo.invictus-ai.in";
+const DEMO_BASE_URL = "https://jarvis-invictus.github.io/invictus-dental-demos";
 
 /* ================================================================ */
 /*  NICHE CATEGORIES — curated grouping                               */
@@ -160,14 +159,25 @@ function extractNicheId(filename: string): string {
   return name;
 }
 
-export async function GET() {
+export async function GET(): Promise<any> {
   try {
-    const raw = execSync(
-      "docker exec dental-demo-dental-demo-1 ls /usr/share/nginx/html/ 2>/dev/null",
-      { timeout: 5000 }
-    ).toString().trim();
+    // Fetch file tree from GitHub API (cached for 5 min)
+    const githubPAT = process.env.GITHUB_PAT || "";
+    const headers: Record<string, string> = { "User-Agent": "InvictusMC/1.0" };
+    if (githubPAT) headers["Authorization"] = `Bearer ${githubPAT}`;
 
-    const allFiles = raw.split("\n").filter(f => f.endsWith(".html") && !f.startsWith("."));
+    const treeRes = await fetch(
+      "https://api.github.com/repos/jarvis-invictus/invictus-dental-demos/git/trees/main?recursive=1",
+      { headers, next: { revalidate: 300 } }
+    );
+    if (!treeRes.ok) throw new Error(`GitHub API error: ${treeRes.status}`);
+    const treeData = await treeRes.json();
+
+    // Extract top-level HTML files only (not inside subdirectories)
+    const allFiles: string[] = treeData.tree
+      .filter((item: any) => item.type === "blob" && !item.path.includes("/") && item.path.endsWith(".html"))
+      .map((item: any) => item.path)
+      .filter((f: string) => !["demo-index-current.html", "showcase-gallery.html"].includes(f));
 
     // Group files by niche
     const nicheMap: Record<string, DemoVariant[]> = {};

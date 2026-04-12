@@ -1,3 +1,6 @@
+import type { Metadata } from 'next';
+export const metadata: Metadata = { title: 'Activity | Invictus MC' };
+
 import Sidebar from "@/components/dashboard/Sidebar";
 import ActivityLog from "@/components/activity/ActivityLog";
 

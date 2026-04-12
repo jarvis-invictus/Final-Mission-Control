@@ -914,6 +914,9 @@ function ComposeTab({ templates, templatesLoading, onSent, initialTo, initialSub
             />
           </div>
 
+          {/* AI Email Generator */}
+          <AIEmailGenerator onGenerated={(s, b) => { setSubject(s); setBody(b); }} />
+
           {/* Body with rich toolbar */}
           <div>
             <label className="block text-xs text-zinc-500 mb-1.5">Body</label>
@@ -1649,6 +1652,81 @@ function DomainsTab() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ================================================================ */
+/*  AI EMAIL GENERATOR                                               */
+/* ================================================================ */
+function AIEmailGenerator({ onGenerated }: { onGenerated: (subject: string, body: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [niche, setNiche] = useState("dental");
+  const [type, setType] = useState("discovery");
+  const [recipientName, setRecipientName] = useState("");
+  const [businessName, setBusinessName] = useState("");
+  const [city, setCity] = useState("Pune");
+  const [generating, setGenerating] = useState(false);
+
+  const handleGenerate = async () => {
+    setGenerating(true);
+    try {
+      const res = await fetch("/api/email/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ niche, type, recipientName, businessName, city }),
+      });
+      const data = await res.json();
+      if (data.subject && data.body) {
+        onGenerated(data.subject, data.body);
+        setOpen(false);
+      }
+    } catch {} finally { setGenerating(false); }
+  };
+
+  if (!open) {
+    return (
+      <button onClick={() => setOpen(true)}
+        className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium bg-violet-500/10 text-violet-400 rounded-lg border border-violet-500/20 hover:bg-violet-500/20 transition-all">
+        ✨ Generate with AI
+      </button>
+    );
+  }
+
+  return (
+    <div className="p-3 bg-violet-500/5 rounded-xl border border-violet-500/10 space-y-2 animate-fadeInUp">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-semibold text-violet-400">✨ AI Email Generator</span>
+        <button onClick={() => setOpen(false)} className="text-zinc-500 hover:text-white"><X className="w-3.5 h-3.5" /></button>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        <select value={niche} onChange={e => setNiche(e.target.value)}
+          className="px-2 py-1.5 bg-surface-3 border border-white/5 rounded-lg text-xs text-zinc-200">
+          <option value="dental">🦷 Dental</option>
+          <option value="ca">📊 CA/Tax</option>
+          <option value="education">📚 Education</option>
+          <option value="lawyer">⚖️ Lawyer</option>
+        </select>
+        <select value={type} onChange={e => setType(e.target.value)}
+          className="px-2 py-1.5 bg-surface-3 border border-white/5 rounded-lg text-xs text-zinc-200">
+          <option value="discovery">Discovery</option>
+          <option value="followup">Follow-up</option>
+          <option value="value">Value</option>
+          <option value="breakup">Breakup</option>
+        </select>
+        <input value={city} onChange={e => setCity(e.target.value)} placeholder="City"
+          className="px-2 py-1.5 bg-surface-3 border border-white/5 rounded-lg text-xs text-zinc-200" />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <input value={recipientName} onChange={e => setRecipientName(e.target.value)} placeholder="Recipient name"
+          className="px-2 py-1.5 bg-surface-3 border border-white/5 rounded-lg text-xs text-zinc-200" />
+        <input value={businessName} onChange={e => setBusinessName(e.target.value)} placeholder="Business name"
+          className="px-2 py-1.5 bg-surface-3 border border-white/5 rounded-lg text-xs text-zinc-200" />
+      </div>
+      <button onClick={handleGenerate} disabled={generating}
+        className="w-full py-2 bg-violet-500/20 text-violet-400 text-xs font-semibold rounded-lg hover:bg-violet-500/30 transition-all disabled:opacity-50">
+        {generating ? "Generating..." : "✨ Generate Email"}
+      </button>
     </div>
   );
 }

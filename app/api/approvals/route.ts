@@ -9,14 +9,21 @@ interface Approval {
   id: string;
   title: string;
   description: string;
-  type: "content" | "outreach" | "feature" | "budget" | "strategy" | "other";
+  type: "content" | "outreach" | "feature" | "budget" | "strategy" | "access" | "asset" | "other";
   submittedBy: string;
   submittedAt: string;
   status: "pending" | "approved" | "rejected" | "changes_requested";
   reviewedAt?: string;
   reviewNote?: string;
   priority: "high" | "medium" | "low";
-  linkedTo?: string; // URL or page reference
+  linkedTo?: string;
+  // NEW ROI fields
+  expectedROI?: string;
+  businessImpact?: "critical" | "high" | "medium" | "low";
+  estimatedCost?: string;
+  timeToValue?: string;
+  whatTheyNeed?: string;
+  whyBlocked?: string;
 }
 
 function loadApprovals(): Approval[] {

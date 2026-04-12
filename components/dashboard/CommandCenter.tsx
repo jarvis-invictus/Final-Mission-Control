@@ -130,8 +130,9 @@ export default function CommandCenter() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [ghlStats, setGhlStats] = useState<{ contacts: number; opportunities: number; pipelineValue: number; conversations: number } | null>(null);
-  const [weather, setWeather] = useState<{ temp_C: string; weatherDesc: string } | null>(null);
+  const [weather, setWeather] = useState<{ temp_C: string; weatherDesc: string; city?: string } | null>(null);
   const [liveTime, setLiveTime] = useState(new Date());
+  const [livePriorities, setLivePriorities] = useState<{ level: string; owner: string; title: string; detail: string; source: string }[]>([]);
 
   const fetchData = useCallback(async (isRefresh = false) => {
     try {
@@ -170,9 +171,26 @@ export default function CommandCenter() {
     return () => clearInterval(interval);
   }, [fetchData]);
 
-  /* Weather + live clock */
+  /* Weather + live clock — use browser geolocation */
   useEffect(() => {
-    fetch("/api/weather").then(r => r.json()).then(setWeather).catch(() => {});
+    const fetchWeather = (lat?: number, lon?: number) => {
+      const params = lat && lon ? `?lat=${lat}&lon=${lon}` : "";
+      fetch(`/api/weather${params}`).then(r => r.json()).then(setWeather).catch(() => {});
+    };
+    if (typeof navigator !== "undefined" && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => fetchWeather(pos.coords.latitude, pos.coords.longitude),
+        () => fetchWeather(),
+        { timeout: 5000 }
+      );
+    } else {
+      fetchWeather();
+    }
+    // Fetch live priorities from Jarvis
+    fetch("/api/jarvis-priorities").then(r => r.json()).then(d => {
+      if (d.priorities) setLivePriorities(d.priorities);
+    }).catch(() => {});
+
     const clockInterval = setInterval(() => setLiveTime(new Date()), 1000);
     return () => clearInterval(clockInterval);
   }, []);
@@ -271,7 +289,7 @@ export default function CommandCenter() {
               {weather && weather.temp_C !== "?" && (
                 <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/5 border border-white/10">
                   {weather.weatherDesc === "Sunny" || weather.weatherDesc === "Clear" ? "☀️" : weather.weatherDesc.includes("Rain") ? "🌧️" : weather.weatherDesc.includes("Cloud") ? "☁️" : "🌤️"}
-                  {weather.temp_C}°C Pune · {weather.weatherDesc}
+                  {weather.temp_C}°C {weather.city || "Pune"} · {weather.weatherDesc}
                 </span>
               )}
             </div>
@@ -285,7 +303,7 @@ export default function CommandCenter() {
             <button
               onClick={() => fetchData(true)}
               disabled={refreshing}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-white/5 border border-white/10 hover:border-[var(--neon)]/30 hover:shadow-[0_0_15px_rgba(0,255,136,0.1)] text-zinc-300 hover:text-white transition-all"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-white/5 border border-white/10 hover:border-brand-400/30 hover:shadow-[0_0_15px_rgba(212,168,83,0.1)] text-zinc-300 hover:text-white transition-all"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
               {refreshing ? "Refreshing..." : "Refresh"}
@@ -347,45 +365,32 @@ export default function CommandCenter() {
         <FleetStatusLive />
       </div>
 
-      {/* Today's Priorities */}
+      {/* Today's Priorities — Live from Jarvis + Elon */}
       <div className="bg-surface-2 rounded-xl p-6 border border-white/5">
-        <h2 className="text-lg font-semibold text-white mb-4">Today&apos;s Priorities</h2>
-        {dueTasks.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {dueTasks.slice(0, 3).map((task) => {
-              const cfg = priorityConfig[task.priority] ?? priorityConfig.P2;
-              return (
-                <div key={task.id} className={`p-4 bg-surface-3 rounded-lg border-l-2 ${cfg.borderColor}`}>
-                  <div className={`text-xs ${cfg.color} font-medium uppercase tracking-wider mb-2`}>
-                    {cfg.label} · {task.assigned_to}
-                  </div>
-                  <div className="text-sm text-zinc-200 font-medium line-clamp-2">{task.title}</div>
-                  <div className="text-xs text-zinc-500 mt-1 line-clamp-2">
-                    {task.description?.slice(0, 120)}{(task.description?.length ?? 0) > 120 ? "…" : ""}
-                  </div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-white">Today&apos;s Priorities</h2>
+          <span className="text-[10px] text-zinc-600">Live from Jarvis + Elon</span>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {(livePriorities.length > 0 ? livePriorities : [
+            { level: "P0", owner: "Elon", title: "MC V7 — Full completion", detail: "Fleet, Niche Gallery, n8n, Intel, Calendar, Onboarding Engine", source: "elon" },
+            { level: "P1", owner: "Jarvis", title: "Cold Email — DNS + warmup", detail: "invictusai.site/.online/.tech — Postal ready, DNS pending", source: "jarvis" },
+            { level: "P1", owner: "Jarvis", title: "n8n Workflows — expand", detail: "4 active at n8n.invictus-ai.in, building template library", source: "jarvis" },
+            { level: "P2", owner: "All", title: "First client onboarding", detail: "Onboarding engine ready — waiting for first real client", source: "elon" },
+          ]).slice(0, 4).map((p, i) => {
+            const borderCol = p.level === "P0" ? "border-red-500" : p.level === "P1" ? "border-amber-500" : "border-brand-500";
+            const labelCol = p.level === "P0" ? "text-red-400" : p.level === "P1" ? "text-amber-400" : "text-brand-400";
+            return (
+              <div key={i} className={`p-4 bg-surface-3 rounded-lg border-l-2 ${borderCol}`}>
+                <div className={`text-xs ${labelCol} font-medium uppercase tracking-wider mb-2`}>
+                  {p.level} · {p.owner}
                 </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 bg-surface-3 rounded-lg border-l-2 border-red-500">
-              <div className="text-xs text-red-400 font-medium uppercase tracking-wider mb-2">Critical · Sahil</div>
-              <div className="text-sm text-zinc-200 font-medium">Decide 2-3 Focus Niches</div>
-              <div className="text-xs text-zinc-500 mt-1">All vertical-building and outreach is stalled until niches are selected.</div>
-            </div>
-            <div className="p-4 bg-surface-3 rounded-lg border-l-2 border-amber-500">
-              <div className="text-xs text-amber-400 font-medium uppercase tracking-wider mb-2">High · Sahil</div>
-              <div className="text-sm text-zinc-200 font-medium">Define Pricing & Offer</div>
-              <div className="text-xs text-zinc-500 mt-1">Sales can&apos;t close without pricing tiers. What do we deliver and for how much?</div>
-            </div>
-            <div className="p-4 bg-surface-3 rounded-lg border-l-2 border-brand-500">
-              <div className="text-xs text-brand-400 font-medium uppercase tracking-wider mb-2">In Progress · Elon</div>
-              <div className="text-sm text-zinc-200 font-medium">MC Dashboard Rebuild</div>
-              <div className="text-xs text-zinc-500 mt-1">V4 rebuild active — fixing performance, Kanban, doc viewer, activity feed.</div>
-            </div>
-          </div>
-        )}
+                <div className="text-sm text-zinc-200 font-medium line-clamp-2">{p.title}</div>
+                <div className="text-xs text-zinc-500 mt-1 line-clamp-2">{p.detail}</div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
     </div>

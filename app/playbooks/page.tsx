@@ -1,3 +1,6 @@
+import type { Metadata } from 'next';
+export const metadata: Metadata = { title: 'Playbooks | Invictus MC' };
+
 import Sidebar from '@/components/dashboard/Sidebar';
 import PlaybookViewer from '@/components/playbooks/PlaybookViewer';
 

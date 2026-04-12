@@ -1,3 +1,6 @@
+import type { Metadata } from 'next';
+export const metadata: Metadata = { title: 'Email | Invictus MC' };
+
 import Sidebar from '@/components/dashboard/Sidebar';
 import EmailCenter from '@/components/email/EmailCenter';
 

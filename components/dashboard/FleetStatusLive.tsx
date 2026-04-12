@@ -174,7 +174,7 @@ export default function FleetStatusLive() {
       </div>
 
       {/* Active agents grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
         {activeAgents.map((agent) => (
           <AgentCard key={agent.id} agent={agent} onAction={handleAgentAction} actionInProgress={actionAgent === agent.id} />
         ))}
@@ -263,46 +263,43 @@ function AgentCard({ agent, onAction, actionInProgress }: {
             <Shield className="w-3 h-3" /> Controls
           </button>
         ) : (
-          <div className="space-y-1.5">
-            {/* Row 1: Restart + Pause */}
-            <div className="flex gap-1">
+          <div className="space-y-1">
+            {/* 4 controls in 2x2 grid — icon only to prevent overflow */}
+            <div className="grid grid-cols-2 gap-1">
               <button onClick={() => { onAction(agent.id, "restart"); setShowControls(false); }}
-                disabled={actionInProgress}
-                className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-[9px] font-bold uppercase tracking-wider bg-amber-500/15 text-amber-400 hover:bg-amber-500/25 rounded-lg border border-amber-500/25 disabled:opacity-50 transition-all">
+                disabled={actionInProgress} title="Restart"
+                className="flex items-center justify-center gap-1 px-1.5 py-1.5 text-[9px] font-bold bg-amber-500/15 text-amber-400 hover:bg-amber-500/25 rounded-lg border border-amber-500/25 disabled:opacity-50 transition-all">
                 {actionInProgress ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCcw className="w-3 h-3" />}
-                Restart
+                <span className="hidden sm:inline">Restart</span>
               </button>
               {isOnline ? (
                 <button onClick={() => { onAction(agent.id, "pause"); setShowControls(false); }}
-                  disabled={actionInProgress}
-                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-[9px] font-bold uppercase tracking-wider bg-blue-500/15 text-blue-400 hover:bg-blue-500/25 rounded-lg border border-blue-500/25 disabled:opacity-50 transition-all">
-                  <Pause className="w-3 h-3" /> Pause
+                  disabled={actionInProgress} title="Pause"
+                  className="flex items-center justify-center gap-1 px-1.5 py-1.5 text-[9px] font-bold bg-blue-500/15 text-blue-400 hover:bg-blue-500/25 rounded-lg border border-blue-500/25 disabled:opacity-50 transition-all">
+                  <Pause className="w-3 h-3" /><span className="hidden sm:inline">Pause</span>
                 </button>
               ) : (
                 <button onClick={() => { onAction(agent.id, "unpause"); setShowControls(false); }}
-                  disabled={actionInProgress}
-                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-[9px] font-bold uppercase tracking-wider bg-cyan-500/15 text-cyan-400 hover:bg-cyan-500/25 rounded-lg border border-cyan-500/25 disabled:opacity-50 transition-all">
-                  <Play className="w-3 h-3" /> Resume
+                  disabled={actionInProgress} title="Resume"
+                  className="flex items-center justify-center gap-1 px-1.5 py-1.5 text-[9px] font-bold bg-cyan-500/15 text-cyan-400 hover:bg-cyan-500/25 rounded-lg border border-cyan-500/25 disabled:opacity-50 transition-all">
+                  <Play className="w-3 h-3" /><span className="hidden sm:inline">Resume</span>
                 </button>
               )}
-            </div>
-            {/* Row 2: Stop / Start */}
-            <div className="flex gap-1">
               {isOnline ? (
                 <button onClick={() => { onAction(agent.id, "stop"); setShowControls(false); }}
-                  disabled={actionInProgress}
-                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-[9px] font-bold uppercase tracking-wider bg-red-500/15 text-red-400 hover:bg-red-500/25 rounded-lg border border-red-500/25 disabled:opacity-50 transition-all">
-                  <Square className="w-3 h-3" /> Stop
+                  disabled={actionInProgress} title="Stop"
+                  className="flex items-center justify-center gap-1 px-1.5 py-1.5 text-[9px] font-bold bg-red-500/15 text-red-400 hover:bg-red-500/25 rounded-lg border border-red-500/25 disabled:opacity-50 transition-all">
+                  <Square className="w-3 h-3" /><span className="hidden sm:inline">Stop</span>
                 </button>
               ) : (
                 <button onClick={() => { onAction(agent.id, "start"); setShowControls(false); }}
-                  disabled={actionInProgress}
-                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-[9px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 rounded-lg border border-emerald-500/25 disabled:opacity-50 transition-all">
-                  <Power className="w-3 h-3" /> Start
+                  disabled={actionInProgress} title="Start"
+                  className="flex items-center justify-center gap-1 px-1.5 py-1.5 text-[9px] font-bold bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 rounded-lg border border-emerald-500/25 disabled:opacity-50 transition-all">
+                  <Power className="w-3 h-3" /><span className="hidden sm:inline">Start</span>
                 </button>
               )}
-              <button onClick={() => setShowControls(false)}
-                className="px-2 py-1.5 text-[9px] text-zinc-600 hover:text-zinc-400 rounded-lg hover:bg-surface-3 transition-all">
+              <button onClick={() => setShowControls(false)} title="Close"
+                className="flex items-center justify-center px-1.5 py-1.5 text-[9px] text-zinc-600 hover:text-zinc-400 rounded-lg hover:bg-surface-3 transition-all col-span-1">
                 ✕
               </button>
             </div>

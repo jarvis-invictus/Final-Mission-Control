@@ -111,6 +111,29 @@ function GaugeChart({ value, max, label, unit, color, warn, critical }: {
   );
 }
 
+function HealthBadge({ diskPct, ramPct, swapPct, loadVal, cpus }: { diskPct: number; ramPct: number; swapPct: number; loadVal: number; cpus: number }) {
+  const loadPct = Math.round((loadVal / cpus) * 100);
+  const score = Math.round(((100 - diskPct) * 0.3) + ((100 - ramPct) * 0.3) + ((100 - swapPct) * 0.25) + ((100 - Math.min(loadPct, 100)) * 0.15));
+  const color = score >= 70 ? 'emerald' : score >= 40 ? 'amber' : 'red';
+  const label = score >= 70 ? 'HEALTHY' : score >= 40 ? 'STRESSED' : 'CRITICAL';
+  const emoji = score >= 70 ? '\uD83D\uDFE2' : score >= 40 ? '\uD83D\uDFE1' : '\uD83D\uDD34';
+  return (
+    <div className={`flex items-center gap-4 px-5 py-3 rounded-xl border bg-${color}-500/5 border-${color}-500/20`}>
+      <span className="text-xl">{emoji}</span>
+      <div>
+        <span className={`text-base font-bold text-${color}-400`}>{label}</span>
+        <span className="text-xs text-zinc-500 ml-2">Score: {score}/100</span>
+      </div>
+      <div className="flex gap-4 ml-4 text-xs text-zinc-400">
+        <span>\uD83D\uDCBE Disk {diskPct}%</span>
+        <span>\uD83E\uDDE0 RAM {ramPct}%</span>
+        <span>\uD83D\uDCAB Swap {swapPct}%</span>
+        <span>\u26A1 Load {loadVal}/{cpus} CPU</span>
+      </div>
+    </div>
+  );
+}
+
 function BarRow({ label, value, max, color, sub }: { label: string; value: number; max: number; color: string; sub?: string }) {
   const pct = Math.min((value / max) * 100, 100);
   return (
@@ -254,9 +277,20 @@ export default function AuditPage() {
             <div className="text-right">
               <div className="text-xs text-zinc-500">Auto-refresh 30s</div>
               <div className="text-sm text-zinc-400">Last: {lastUpdate}</div>
-              <button onClick={fetchData} className="mt-2 px-5 py-2.5 bg-brand-500 hover:bg-brand-400 rounded-xl text-sm font-bold text-black shadow-[0_0_20px_rgba(0,255,136,0.2)] hover:shadow-[0_0_30px_rgba(0,255,136,0.3)] transition-all active:scale-95">🔄 Refresh VPS Data</button>
+              <button onClick={fetchData} className="mt-2 px-5 py-2.5 bg-brand-500 hover:bg-brand-400 rounded-xl text-sm font-bold text-black shadow-[0_0_20px_rgba(212,168,83,0.2)] hover:shadow-[0_0_30px_rgba(212,168,83,0.3)] transition-all active:scale-95">🔄 Refresh VPS Data</button>
             </div>
           </div>
+        </div>
+
+        {/* Health Score Badge */}
+        <div className="mb-6">
+          <HealthBadge
+            diskPct={Math.round((diskUsedGb / diskTotalGb) * 100)}
+            ramPct={Math.round((ramUsedMb / ramTotalMb) * 100)}
+            swapPct={Math.round((swapUsedMb / swapTotalMb) * 100)}
+            loadVal={data.load?.['1min'] || 0}
+            cpus={data.cpu_count || 4}
+          />
         </div>
 
         {/* Three Gauges */}

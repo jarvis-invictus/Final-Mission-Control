@@ -1,3 +1,6 @@
+import type { Metadata } from 'next';
+export const metadata: Metadata = { title: 'Calendar | Invictus MC' };
+
 import CalendarView from "@/components/calendar/CalendarView";
 import Sidebar from "@/components/dashboard/Sidebar";
 

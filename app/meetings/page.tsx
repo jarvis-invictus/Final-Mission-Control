@@ -1,3 +1,6 @@
+import type { Metadata } from 'next';
+export const metadata: Metadata = { title: 'Meetings | Invictus MC' };
+
 import MeetingsView from "@/components/meetings/MeetingsView";
 import Sidebar from "@/components/dashboard/Sidebar";
 

@@ -1,0 +1,119 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+/* ============================================
+   THEME: Glassmorphism Dark + Neon Green
+   ============================================ */
+:root {
+  --background: #050508;
+  --foreground: #e4e4e7;
+  --brand: #00ff88;
+  --brand-dim: rgba(0, 255, 136, 0.1);
+  --brand-glow: rgba(0, 255, 136, 0.15);
+  --surface-0: #050508;
+  --surface-1: rgba(255, 255, 255, 0.03);
+  --surface-2: rgba(255, 255, 255, 0.05);
+  --surface-3: rgba(255, 255, 255, 0.08);
+  --surface-4: rgba(255, 255, 255, 0.04);
+  --surface-5: rgba(255, 255, 255, 0.06);
+  --neon: #00ff88;
+  --neon-dim: rgba(0, 255, 136, 0.08);
+  --neon-glow: 0 0 20px rgba(0, 255, 136, 0.15);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* ============================================
+   SCROLLBAR
+   ============================================ */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #050508; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+/* ============================================
+   GLASSMORPHISM UTILITIES
+   ============================================ */
+.glass {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.glass-strong {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 5px rgba(0, 255, 136, 0.2); }
+  50% { box-shadow: 0 0 15px rgba(0, 255, 136, 0.4); }
+}
+
+.animate-fadeInUp { animation: fadeInUp 0.4s ease-out forwards; }
+.animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
+.animate-glow-pulse { animation: glow-pulse 2s ease-in-out infinite; }
+
+/* Stagger delays for card grids */
+.animate-stagger-1 { animation-delay: 0.05s; opacity: 0; }
+.animate-stagger-2 { animation-delay: 0.1s; opacity: 0; }
+.animate-stagger-3 { animation-delay: 0.15s; opacity: 0; }
+.animate-stagger-4 { animation-delay: 0.2s; opacity: 0; }
+
+/* ============================================
+   NEON EFFECTS
+   ============================================ */
+.neon-glow {
+  box-shadow: var(--neon-glow);
+}
+
+.neon-text {
+  color: var(--neon);
+  text-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+}
+
+.brand-glow {
+  box-shadow: 0 0 20px rgba(0, 255, 136, 0.08);
+}
+
+.text-brand-gradient {
+  background: linear-gradient(135deg, #00ff88, #00cc6a);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ============================================
+   SMOOTH TRANSITIONS (global)
+   ============================================ */
+* {
+  transition-property: background-color, border-color, box-shadow, opacity;
+  transition-duration: 0.15s;
+  transition-timing-function: ease;
+}
+
+/* Override for elements that shouldn't transition */
+input, textarea, select { transition: border-color 0.15s ease, box-shadow 0.15s ease; }

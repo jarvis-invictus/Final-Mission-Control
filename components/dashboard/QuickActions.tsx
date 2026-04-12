@@ -54,7 +54,7 @@ const ACTIONS: QuickAction[] = [
     color: "text-brand-400",
   },
   {
-    label: "Demo Gallery",
+    label: "Niche Gallery",
     description: "Dental Standard & Premium",
     icon: Globe,
     href: "/demos",

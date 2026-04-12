@@ -1,3 +1,6 @@
+import type { Metadata } from 'next';
+export const metadata: Metadata = { title: 'GoHighLevel | Invictus MC' };
+
 import GHLDashboard from "@/components/ghl/GHLDashboard";
 import Sidebar from "@/components/dashboard/Sidebar";
 

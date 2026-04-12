@@ -6,8 +6,9 @@ export const dynamic = "force-dynamic";
    GitHub API — Multi-account, repo details
    ============================================ */
 
-const ACCOUNTS: Record<string, { pat: string; type: "org" | "user" }> = {
-  "jarvis-invictus": { pat: process.env.GITHUB_PAT || "", type: "user" },
+const ACCOUNTS: Record<string, { pat: string; type: "org" | "user"; owner?: string }> = {
+  "jarvis-invictus": { pat: process.env.GITHUB_PAT || "", type: "user", owner: "jarvis-invictus" },
+  "sahil-b-09": { pat: process.env.GITHUB_PAT_SAHIL || "", type: "user" },
 };
 
 async function ghFetch(url: string, pat: string): Promise<any> {
@@ -41,13 +42,20 @@ export async function GET(req: NextRequest): Promise<any> {
     return NextResponse.json({ error: "No PAT configured for this account" }, { status: 401 });
   }
 
+  /* Resolve actual username for user accounts */
+  let owner = account;
+  if (acct.type === "user") {
+    const me = await ghFetch("https://api.github.com/user", pat);
+    if (me?.login) owner = me.login;
+  }
+
   /* ---------- REPO DETAIL ---------- */
   if (section === "repo" && repoName) {
     const [repo, commits, branches, readme] = await Promise.all([
-      ghFetch(`https://api.github.com/repos/${account}/${repoName}`, pat),
-      ghFetch(`https://api.github.com/repos/${account}/${repoName}/commits?per_page=20`, pat),
-      ghFetch(`https://api.github.com/repos/${account}/${repoName}/branches?per_page=10`, pat),
-      ghFetch(`https://api.github.com/repos/${account}/${repoName}/readme`, pat),
+      ghFetch(`https://api.github.com/repos/${owner}/${repoName}`, pat),
+      ghFetch(`https://api.github.com/repos/${owner}/${repoName}/commits?per_page=20`, pat),
+      ghFetch(`https://api.github.com/repos/${owner}/${repoName}/branches?per_page=10`, pat),
+      ghFetch(`https://api.github.com/repos/${owner}/${repoName}/readme`, pat),
     ]);
 
     let readmeContent = "";
@@ -93,18 +101,20 @@ export async function GET(req: NextRequest): Promise<any> {
   }
 
   /* ---------- OVERVIEW (repo list + recent commits) ---------- */
-  let repos = await ghFetch(
-    acct.type === "org"
-      ? `https://api.github.com/orgs/${account}/repos?sort=pushed&per_page=30`
-      : `https://api.github.com/users/${account}/repos?sort=pushed&per_page=30`,
-    pat
-  );
+  let repos;
+  if (acct.owner) {
+    // Specific owner — fetch their repos directly
+    repos = await ghFetch(`https://api.github.com/users/${acct.owner}/repos?sort=pushed&per_page=30`, pat);
+  } else {
+    // Authenticated user's own repos
+    repos = await ghFetch(`https://api.github.com/user/repos?sort=pushed&per_page=30&type=owner`, pat);
+  }
   if (!repos || !Array.isArray(repos)) repos = [];
 
   // Get recent commits from top 5 repos
   const commits: any[] = [];
   for (const repo of repos.slice(0, 5)) {
-    const repoCommits = await ghFetch(`https://api.github.com/repos/${account}/${repo.name}/commits?per_page=5`, pat);
+    const repoCommits = await ghFetch(`https://api.github.com/repos/${owner}/${repo.name}/commits?per_page=5`, pat);
     if (repoCommits && Array.isArray(repoCommits)) {
       for (const c of repoCommits) {
         commits.push({

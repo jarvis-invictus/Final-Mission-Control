@@ -135,7 +135,7 @@ export default function GitHubView() {
   /* ============ REPO DETAIL VIEW ============ */
   if (selectedRepo) {
     return (
-      <div className="p-6 space-y-6">
+      <div className="space-y-6">
         {/* Back button */}
         <button onClick={() => { setSelectedRepo(null); setRepoDetail(null); }}
           className="flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition-colors">
@@ -266,7 +266,7 @@ export default function GitHubView() {
 
   /* ============ OVERVIEW VIEW ============ */
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       {/* Header with account switcher */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
@@ -325,7 +325,7 @@ export default function GitHubView() {
               {repos.map((repo, i) => (
                 <button key={repo.name} onClick={() => loadRepoDetail(repo.name)}
                   className={clsx(
-                    "w-full text-left p-4 glass rounded-xl hover:border-brand-400/30 hover:shadow-[0_0_15px_rgba(0,255,136,0.05)] transition-all group animate-fadeInUp",
+                    "w-full text-left p-4 glass rounded-xl hover:border-brand-400/30 hover:shadow-[0_0_15px_rgba(212,168,83,0.05)] transition-all group animate-fadeInUp",
                   )}
                   style={{ animationDelay: `${i * 0.03}s`, opacity: 0 }}>
                   <div className="flex items-start justify-between gap-3">

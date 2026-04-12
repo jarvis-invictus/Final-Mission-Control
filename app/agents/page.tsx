@@ -1,3 +1,6 @@
+import type { Metadata } from 'next';
+export const metadata: Metadata = { title: 'Agents | Invictus MC' };
+
 import Sidebar from '@/components/dashboard/Sidebar';
 import AgentControl from '@/components/agents/AgentControl';
 

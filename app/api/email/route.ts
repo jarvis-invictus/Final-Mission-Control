@@ -12,8 +12,10 @@ const SEQUENCES_FILE = `${DATA_DIR}/email-sequences.json`;
 
 /* Known email domains */
 const EMAIL_DOMAINS = [
-  { domain: "invictus-ai.in", type: "primary", provider: "Zoho", mx: true, spf: true, dkim: true, dmarc: true, status: "active" },
-  { domain: "contact@invictus-ai.in", type: "main inbox", provider: "Zoho Pro", mx: true, spf: true, dkim: true, dmarc: true, status: "active" },
+  { domain: "invictus-ai.in", type: "primary", provider: "Zoho", mx: true, spf: true, dkim: true, dmarc: true, status: "active", warmupDay: 21, warmupTotal: 21 },
+  { domain: "invictusai.site", type: "cold-outreach", provider: "Postal SMTP", mx: true, spf: true, dkim: true, dmarc: true, status: "warming", warmupDay: 3, warmupTotal: 21 },
+  { domain: "invictusai.online", type: "cold-outreach", provider: "Postal SMTP", mx: true, spf: true, dkim: true, dmarc: true, status: "warming", warmupDay: 3, warmupTotal: 21 },
+  { domain: "invictusai.tech", type: "cold-outreach", provider: "Postal SMTP", mx: true, spf: true, dkim: true, dmarc: true, status: "warming", warmupDay: 3, warmupTotal: 21 },
 ];
 
 /* Default sequences per niche */

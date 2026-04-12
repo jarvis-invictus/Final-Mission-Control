@@ -19,35 +19,36 @@ interface AgentCheck {
 }
 
 const AGENT_DEFS = [
-  { id: "jarvis", name: "Jarvis", role: "COO", title: "Gateway & Infrastructure", container: "openclaw-v1yl-openclaw-1" },
-  { id: "elon",   name: "Elon",   role: "Fleet Commander", title: "Fleet Operations", container: "openclaw-elon" },
-  { id: "linus",  name: "Linus",  role: "CTO", title: "Build & Deploy",           container: "openclaw-linus" },
-  { id: "jordan", name: "Jordan", role: "CRO", title: "Revenue & Outreach",       container: "openclaw-jordan" },
-  { id: "friend", name: "Friend", role: "Support", title: "Support & Assistance", container: "openclaw-friend" },
+  { id: "jarvis", name: "Jarvis", role: "COO",            title: "Gateway & Infrastructure", container: "openclaw-v1yl-openclaw-1" },
+  { id: "elon",   name: "Elon",   role: "Fleet Commander", title: "Fleet Operations",         container: "openclaw-elon" },
+  { id: "linus",  name: "Linus",  role: "CTO",            title: "Build & Deploy",            container: "openclaw-linus" },
+  { id: "jordan", name: "Jordan", role: "CRO",            title: "Revenue & Outreach",        container: "openclaw-jordan" },
+  { id: "gary",   name: "Gary",   role: "CMO",            title: "Growth & Marketing",        container: "openclaw-gary" },
+  { id: "friend", name: "Friend", role: "Support",        title: "Support & Assistance",      container: "openclaw-friend" },
 ];
 
 const PORT = 18790;
 const TOKEN = "fleet_ops_2026";
 const TIMEOUT_MS = 5000;
 
-/* Dynamically resolve container IPs via docker inspect */
+/* Resolve container IPs individually — handles missing containers gracefully */
 function resolveIPs(): Map<string, string> {
   const result = new Map<string, string>();
-  const containers = AGENT_DEFS.map(a => a.container).join(" ");
-  try {
-    const raw = execSync(
-      `docker inspect ${containers} --format '{{.Name}}|||{{range .NetworkSettings.Networks}}{{.IPAddress}} {{end}}' 2>/dev/null`,
-      { timeout: 5000 }
-    ).toString().trim();
-    for (const line of raw.split("\n")) {
-      const [rawName, ipsStr] = line.split("|||");
+  for (const agent of AGENT_DEFS) {
+    try {
+      const raw = execSync(
+        `docker inspect ${agent.container} --format '{{.Name}}|||{{range .NetworkSettings.Networks}}{{.IPAddress}} {{end}}' 2>/dev/null`,
+        { timeout: 3000 }
+      ).toString().trim();
+      const [rawName, ipsStr] = raw.split("|||");
       const name = rawName.replace(/^\//, "");
-      // Pick the 172.26.x.x IP (traefik_shared network)
       const ips = (ipsStr || "").trim().split(/\s+/);
       const ip = ips.find(i => i.startsWith("172.26.")) || ips[0] || "";
       if (ip) result.set(name, ip);
+    } catch {
+      // Container doesn't exist or isn't running — skip
     }
-  } catch {}
+  }
   return result;
 }
 
