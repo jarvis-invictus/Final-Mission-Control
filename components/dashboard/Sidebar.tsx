@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Users, Mail, FileText, Bot,
   Globe, ChevronLeft, ChevronRight,
   Zap, Search, LogOut, Clock, Calendar,
-  AlertTriangle, ClipboardList, Package, BookOpen, HardDrive, Github, CheckCircle2, Radio, Workflow, ClipboardCheck, UserPlus
+  AlertTriangle, ClipboardList, Package, BookOpen, HardDrive, Github, CheckCircle2, Radio, Workflow, ClipboardCheck
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import { clsx } from "clsx";
@@ -62,8 +62,7 @@ const sections: NavSection[] = [
       { icon: HardDrive, label: "System Audit", href: "/audit" },
       { icon: Radio, label: "Intel", href: "/intel" },
       { icon: Calendar, label: "Meetings", href: "/meetings" },
-      { icon: ClipboardCheck, label: "Fulfillment", href: "/fulfillment" },
-      { icon: UserPlus, label: "Onboarding", href: "/onboarding" },
+      { icon: ClipboardCheck, label: "Client Pipeline", href: "/pipeline" },
       { icon: Workflow, label: "n8n Templates", href: "/n8n" },
     ],
   },
