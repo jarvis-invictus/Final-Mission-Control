@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-export const metadata: Metadata = { title: 'Demos | Invictus MC' };
+export const metadata: Metadata = { title: 'Niche Gallery | Invictus MC' };
 
 import DemoGallery from "@/components/demos/DemoGallery";
 import Sidebar from "@/components/dashboard/Sidebar";
