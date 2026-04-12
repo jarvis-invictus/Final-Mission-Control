@@ -1011,7 +1011,7 @@ function WarmupTab() {
   const [sending, setSending] = useState(false);
   const [starting, setStarting] = useState(false);
   const [testTo, setTestTo] = useState("sahilbagul7641@gmail.com");
-  const [testFrom, setTestFrom] = useState("contact@invictus-ai.in");
+  const [testFrom, setTestFrom] = useState("contact@invictusai.site");
 
   // Natural business conversation templates — rotates randomly
   const EMAIL_TEMPLATES = [
@@ -1306,7 +1306,6 @@ function WarmupTab() {
                 <label className="text-xs text-zinc-500 mb-1 block">From</label>
                 <select value={testFrom} onChange={e => setTestFrom(e.target.value)}
                   className="w-full px-3 py-2 bg-surface-3 border border-white/5 rounded-lg text-sm text-zinc-200">
-                  <option value="contact@invictus-ai.in">contact@invictus-ai.in</option>
                   <option value="contact@invictusai.site">contact@invictusai.site</option>
                   <option value="contact@invictusai.online">contact@invictusai.online</option>
                   <option value="contact@invictusai.tech">contact@invictusai.tech</option>

@@ -148,9 +148,8 @@ async function sendViaSMTP(from: string, to: string, subject: string, body: stri
   });
 }
 
-// Available sender addresses
+// Available sender addresses (outreach domains ONLY — never use invictus-ai.in for cold email)
 const SENDERS: Record<string, string> = {
-  "contact@invictus-ai.in": "Invictus AI",
   "contact@invictusai.site": "Invictus AI",
   "contact@invictusai.online": "Invictus AI",
   "contact@invictusai.tech": "Invictus AI",
